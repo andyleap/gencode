@@ -75,7 +75,9 @@ func MakeGrammar() *Grammar {
 		Lit("}"),
 	)
 	gUnion.Node(func(m Match) (Match, error) {
-		u := &UnionField{}
+		u := &UnionField{
+			Interface: String(GetTag(m, "Interface")),
+		}
 		for _, v := range GetTags(m, "Defer") {
 			u.Structs = append(u.Structs, v.(*UnionDefer))
 		}
