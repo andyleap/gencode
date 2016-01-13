@@ -22,15 +22,23 @@ func TestParser2(t *testing.T) {
 	g := MakeGrammar()
 
 	s, err := g.ParseString(`
-struct Person {
+struct person {
 	name string
-	age int32
+	height float64
+	age int8
 }
 
-struct PersonV2 {
-	FirstName string
-	LastName string
-	age int32
+struct committee {
+	name string
+	leader person
+}
+
+struct group {
+	name string
+	leader union {
+		person
+		committee
+	}
 }
 `)
 	if err != nil {

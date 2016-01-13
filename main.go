@@ -5,16 +5,17 @@ import (
 	"flag"
 	"log"
 	"os"
+
+	"github.com/kr/pretty"
 )
 
 var (
 	SchemaFile = flag.String("schema", "", "Schema to generate gencode for")
 	Package    = flag.String("package", "main", "Package to place code in")
+	Verbose    = flag.Bool("verbose", false, "Pretty print the schema for debugging")
 )
 
 func main() {
-	g := MakeGrammar()
-
 	flag.Parse()
 
 	if *SchemaFile == "" {
@@ -27,19 +28,25 @@ func main() {
 		log.Fatalf("Error opening schema file: %s", err)
 	}
 
+	if file == nil {
+		log.Fatalf("error opening file %s", file)
+	}
+
+	s, err := ParseSchema(file)
+
+	if *Verbose {
+		pretty.Print(s)
+	}
+
+	if err != nil {
+		log.Fatalf("Error parsing schema: %s", err)
+	}
+
 	outfile, err := os.OpenFile(*SchemaFile+".gen.go", os.O_CREATE|os.O_TRUNC, 0666)
 
 	if err != nil {
-		log.Fatalf("Error opening output file file: %s", err)
+		log.Fatalf("Error opening output file: %s", err)
 	}
 
-	s, err := g.Parse(file)
-
-	if err != nil {
-		log.Fatalf("Error parsing schema file: %s", err)
-	}
-
-	def := s.(*Schema)
-
-	def.Generate(outfile, *Package)
+	s.Generate(outfile, *Package)
 }

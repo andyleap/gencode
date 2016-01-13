@@ -54,7 +54,35 @@ func MakeGrammar() *Grammar {
 		return s, nil
 	})
 
-	gType := Or(gIntField, gStringField, gFloatField)
+	gDeferField := And(gIdentifier)
+	gDeferField.Node(func(m Match) (Match, error) {
+		s := &DeferField{
+			Defer: String(m),
+		}
+		return s, nil
+	})
+
+	gUnionDefer := And(gIdentifier)
+	gUnionDefer.Node(func(m Match) (Match, error) {
+		s := &UnionDefer{
+			Defer: String(m),
+		}
+		return s, nil
+	})
+
+	gUnion := And(Lit("union"), Optional(And(RWS, Tag("Interface", gIdentifier))), WS, Lit("{"), WS,
+		Mult(0, 0, And(WS, Tag("Defer", gUnionDefer), NL)),
+		Lit("}"),
+	)
+	gUnion.Node(func(m Match) (Match, error) {
+		u := &UnionField{}
+		for _, v := range GetTags(m, "Defer") {
+			u.Structs = append(u.Structs, v.(*UnionDefer))
+		}
+		return u, nil
+	})
+
+	gType := Or(gIntField, gStringField, gFloatField, gUnion, gDeferField)
 
 	gField := And(Tag("Name", gIdentifier), Require(RWS, Tag("Type", gType), NL))
 	gField.Node(func(m Match) (Match, error) {
@@ -68,7 +96,7 @@ func MakeGrammar() *Grammar {
 		Lit("}"), WS,
 	))
 	gStruct.Node(func(m Match) (Match, error) {
-		s := Struct{
+		s := &Struct{
 			Name: GetTag(m, "Name").(string),
 		}
 		for _, v := range GetTags(m, "Field") {
@@ -81,7 +109,7 @@ func MakeGrammar() *Grammar {
 	gSchema.Node(func(m Match) (Match, error) {
 		s := &Schema{}
 		for _, v := range GetTags(m, "Struct") {
-			s.Structs = append(s.Structs, v.(Struct))
+			s.Structs = append(s.Structs, v.(*Struct))
 		}
 		return s, nil
 	})
