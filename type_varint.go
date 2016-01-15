@@ -12,7 +12,7 @@ var (
 func init() {
 	VarIntTemps = template.Must(template.New("serialize").Parse(`
 	{
-		t := uint{.Bits}({{.Target}})
+		t := uint{{.Bits}}({{.Target}})
 		{{if .Signed}}
 		t <<= 1
    		if {{.Target}} < 0 {
@@ -38,13 +38,13 @@ func init() {
 		buf := make([]byte, 1)
 		buf[0] = 0x80
 		t := uint{{.Bits}}(0)
-		for buf & 0x80 == 0x80 {
+		for buf[0] & 0x80 == 0x80 {
 			t <<= 7
-			_, err = io.ReadFull(r, buf)
+			_, err := io.ReadFull(r, buf)
 			if err != nil {
 				return err
 			}
-			t |= int(buf[0]&0x7F)
+			t |= {{if not .Signed}}u{{end}}int{{.Bits}}(buf[0]&0x7F)
 		}
 		{{if .Signed}}
 		{{.Target}} = int{{.Bits}}(t >> 1)

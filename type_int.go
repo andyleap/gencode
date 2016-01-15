@@ -10,19 +10,37 @@ var (
 )
 
 func init() {
-	IntTemps = template.Must(template.New("serialize").Parse(`
+	IntTemps = template.New("IntTemps").Funcs(template.FuncMap{
+		"Bytes": func(bits int) int {
+			return bits / 8
+		},
+		"BitRange": func(bits int) []int {
+			return []int{0, 8, 16, 24, 32, 40, 48, 56, 64}[0:(bits / 8)]
+		},
+	})
+
+	template.Must(IntTemps.New("serialize").Parse(`
 	{
-		err := binary.Write(w, binary.LittleEndian, {{.Target}})
+		buf := make([]byte, {{Bytes .Bits}})
+		{{range BitRange .Bits}}
+		buf[{{Bytes .}}] = byte({{$.Target}} >> {{.}})
+		{{end}}
+		
+		_, err := w.Write(buf)
 		if err != nil {
 			return err
 		}
 	}`))
 	template.Must(IntTemps.New("deserialize").Parse(`
 	{
-		err := binary.Read(r, binary.LittleEndian, &{{.Target}})
+		buf := make([]byte, {{Bytes .Bits}})
+		_, err := io.ReadFull(r, buf)
 		if err != nil {
 			return err
 		}
+		{{range BitRange .Bits}}
+		{{$.Target}} |= {{if not $.Signed}}u{{end}}int{{$.Bits}}(buf[{{Bytes .}}]) << {{.}}
+		{{end}}
 	}`))
 	template.Must(IntTemps.New("field").Parse(`{{if not .Signed}}u{{end}}int{{.Bits}}`))
 }
