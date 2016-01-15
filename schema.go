@@ -2,20 +2,24 @@ package main
 
 import "io"
 
-type Field interface {
-	GenerateSerialize(w io.Writer)
-	GenerateDeserialize(w io.Writer)
-	GenerateField(w io.Writer)
-	SetName(name string)
+type Type interface {
+	GenerateSerialize(w io.Writer, target string) error
+	GenerateDeserialize(w io.Writer, target string) error
+	GenerateField(w io.Writer) error
 }
 
-type ResolveField interface {
+type ResolveType interface {
 	Resolve(s *Schema) error
+}
+
+type Field struct {
+	Name string
+	Type Type
 }
 
 type Struct struct {
 	Name   string
-	Fields []Field
+	Fields []*Field
 }
 
 type Schema struct {
@@ -25,7 +29,7 @@ type Schema struct {
 func (s *Schema) ResolveAll() error {
 	for _, st := range s.Structs {
 		for _, f := range st.Fields {
-			if rf, ok := f.(ResolveField); ok {
+			if rf, ok := f.Type.(ResolveType); ok {
 				err := rf.Resolve(s)
 				if err != nil {
 					return err

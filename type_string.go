@@ -12,7 +12,7 @@ var (
 func init() {
 	StringTemps = template.Must(template.New("serialize").Parse(`
 	{
-		t := uint64(len(d.{{.Name}}))
+		t := uint64(len({{.Target}}))
 		buf := make([]byte, 10)
 		i := 0
 		for t >= 0x80 {
@@ -26,7 +26,7 @@ func init() {
 		if err != nil {
 			return err
 		}
-		_, err = w.Write([]byte(d.{{.Name}}))
+		_, err = w.Write([]byte({{.Target}}))
 		if err != nil {
 			return err
 		}
@@ -49,28 +49,39 @@ func init() {
 		if err != nil {
 			return err
 		}
-		d.{{.Name}} = string(buf)
+		{{.Target}} = string(buf)
 	}`))
-	template.Must(StringTemps.New("field").Parse(`
-	{{.Name}} string`))
+	template.Must(StringTemps.New("field").Parse(`string`))
 }
 
-type StringField struct {
-	Name string
+type StringType struct {
 }
 
-func (i StringField) GenerateSerialize(w io.Writer) {
-	StringTemps.ExecuteTemplate(w, "serialize", i)
+type StringTemp struct {
+	StringType
+	Target string
 }
 
-func (i StringField) GenerateDeserialize(w io.Writer) {
-	StringTemps.ExecuteTemplate(w, "deserialize", i)
+func (s StringType) GenerateSerialize(w io.Writer, target string) error {
+	err := StringTemps.ExecuteTemplate(w, "serialize", StringTemp{s, target})
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
-func (i StringField) GenerateField(w io.Writer) {
-	StringTemps.ExecuteTemplate(w, "field", i)
+func (s StringType) GenerateDeserialize(w io.Writer, target string) error {
+	err := StringTemps.ExecuteTemplate(w, "deserialize", StringTemp{s, target})
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
-func (i *StringField) SetName(name string) {
-	i.Name = name
+func (s StringType) GenerateField(w io.Writer) error {
+	err := StringTemps.ExecuteTemplate(w, "field", s)
+	if err != nil {
+		return err
+	}
+	return nil
 }

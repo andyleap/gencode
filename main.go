@@ -48,5 +48,8 @@ func main() {
 		log.Fatalf("Error opening output file: %s", err)
 	}
 
-	s.Generate(outfile, *Package)
+	err = s.Generate(outfile, *Package)
+	if err != nil {
+		log.Fatalf("Error generating output: %s", err)
+	}
 }

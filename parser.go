@@ -26,12 +26,12 @@ func MakeGrammar() *Grammar {
 		}
 		signed := GetTag(m, "Unsigned") == nil
 		if GetTag(m, "Var") == nil {
-			return &IntField{
+			return &IntType{
 				Signed: signed,
 				Bits:   int(bits),
 			}, nil
 		}
-		return &VarIntField{
+		return &VarIntType{
 			Signed: signed,
 			Bits:   int(bits),
 		}, nil
@@ -43,20 +43,20 @@ func MakeGrammar() *Grammar {
 		if err != nil {
 			return nil, err
 		}
-		return &FloatField{
+		return &FloatType{
 			Bits: int(bits),
 		}, nil
 	})
 
 	gStringField := And(Lit("string"))
 	gStringField.Node(func(m Match) (Match, error) {
-		s := &StringField{}
+		s := &StringType{}
 		return s, nil
 	})
 
 	gDeferField := And(gIdentifier)
 	gDeferField.Node(func(m Match) (Match, error) {
-		s := &DeferField{
+		s := &DeferType{
 			Defer: String(m),
 		}
 		return s, nil
@@ -75,7 +75,7 @@ func MakeGrammar() *Grammar {
 		Lit("}"),
 	)
 	gUnion.Node(func(m Match) (Match, error) {
-		u := &UnionField{
+		u := &UnionType{
 			Interface: String(GetTag(m, "Interface")),
 		}
 		for _, v := range GetTags(m, "Defer") {
@@ -84,12 +84,24 @@ func MakeGrammar() *Grammar {
 		return u, nil
 	})
 
-	gType := Or(gIntField, gStringField, gFloatField, gUnion, gDeferField)
+	gType := &Grammar{}
+
+	gSlice := And(Lit("[]"), Require(Tag("SubType", gType)))
+	gSlice.Node(func(m Match) (Match, error) {
+		u := &SliceType{
+			SubType: GetTag(m, "SubType").(Type),
+		}
+		return u, nil
+	})
+
+	gType.Set(Or(gSlice, gIntField, gStringField, gFloatField, gUnion, gDeferField))
 
 	gField := And(Tag("Name", gIdentifier), Require(RWS, Tag("Type", gType), NL))
 	gField.Node(func(m Match) (Match, error) {
-		f := GetTag(m, "Type").(Field)
-		f.SetName(GetTag(m, "Name").(string))
+		f := &Field{
+			Name: GetTag(m, "Name").(string),
+			Type: GetTag(m, "Type").(Type),
+		}
 		return TagMatch("Field", f), nil
 	})
 
@@ -102,7 +114,7 @@ func MakeGrammar() *Grammar {
 			Name: GetTag(m, "Name").(string),
 		}
 		for _, v := range GetTags(m, "Field") {
-			s.Fields = append(s.Fields, v.(Field))
+			s.Fields = append(s.Fields, v.(*Field))
 		}
 		return TagMatch("Struct", s), nil
 	})

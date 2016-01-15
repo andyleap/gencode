@@ -13,7 +13,7 @@ func init() {
 	UnionTemps = template.Must(template.New("serialize").Parse(`
 	{
 		var t uint64
-		switch d.{{.Name}}.(type) {
+		switch {{.Target}}.(type) {
 			{{range $id, $struct := .Structs}}
 		case {{$struct.Struct.Name}}:
 			t = {{$id}}
@@ -32,7 +32,7 @@ func init() {
 		if err != nil {
 			return err
 		}
-		switch tt := d.{{.Name}}.(type) {
+		switch tt := {{.Target}}.(type) {
 			{{range $id, $struct := .Structs}}
 		case {{$struct.Struct.Name}}:
 			err = tt.Serialize(w)
@@ -63,17 +63,15 @@ func init() {
 			if err != nil {
 				return err
 			}
-			d.{{$.Name}} = tt
+			{{$.Target}} = tt
 			{{end}}
 		}
 		
 	}`))
-	template.Must(UnionTemps.New("field").Parse(`
-	{{.Name}} {{if .Interface}}{{.Interface}}{{else}}interface{}{{end}}`))
+	template.Must(UnionTemps.New("field").Parse(`{{if .Interface}}{{.Interface}}{{else}}interface{}{{end}}`))
 }
 
-type UnionField struct {
-	Name      string
+type UnionType struct {
 	Structs   []*UnionDefer
 	Interface string
 }
@@ -95,23 +93,36 @@ func (ud *UnionDefer) Resolve(s *Schema) error {
 	}
 }
 
-func (u UnionField) GenerateSerialize(w io.Writer) {
-	UnionTemps.ExecuteTemplate(w, "serialize", u)
+type UnionTemp struct {
+	UnionType
+	Target string
 }
 
-func (u UnionField) GenerateDeserialize(w io.Writer) {
-	UnionTemps.ExecuteTemplate(w, "deserialize", u)
+func (u UnionType) GenerateSerialize(w io.Writer, target string) error {
+	err := UnionTemps.ExecuteTemplate(w, "serialize", UnionTemp{u, target})
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
-func (u UnionField) GenerateField(w io.Writer) {
-	UnionTemps.ExecuteTemplate(w, "field", u)
+func (u UnionType) GenerateDeserialize(w io.Writer, target string) error {
+	err := UnionTemps.ExecuteTemplate(w, "deserialize", UnionTemp{u, target})
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
-func (u *UnionField) SetName(name string) {
-	u.Name = name
+func (u UnionType) GenerateField(w io.Writer) error {
+	err := UnionTemps.ExecuteTemplate(w, "field", u)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
-func (u *UnionField) Resolve(s *Schema) error {
+func (u *UnionType) Resolve(s *Schema) error {
 	for _, ud := range u.Structs {
 		err := ud.Resolve(s)
 		if err != nil {
