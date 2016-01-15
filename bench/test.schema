@@ -1,0 +1,10 @@
+struct Person {
+	Name string
+	Age uint8
+	Height float64
+}
+
+struct Group {
+	Name string
+	Members []Person
+}
