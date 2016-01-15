@@ -73,13 +73,13 @@ func (d *%s) Deserialize(r io.Reader) error {`, s.Name)
 func (s *Schema) Generate(w io.Writer, Package string) error {
 	fmt.Fprintf(w, `package %s
 import (
-	"encoding/binary"
+	"math"
 	"io"
 )
 
 var (
 	_ = io.ReadFull
-	_ = binary.Write
+	_ = math.Float64frombits
 )
 
 `, Package)

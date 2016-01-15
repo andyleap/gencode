@@ -6,5 +6,8 @@ struct Person {
 
 struct Group {
 	Name string
-	Members []Person
+	Members []union{
+		Person
+		Group
+	}
 }

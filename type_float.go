@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"io"
 	"text/template"
 )
@@ -12,17 +13,14 @@ var (
 func init() {
 	FloatTemps = template.Must(template.New("serialize").Parse(`
 	{
-		err := binary.Write(w, binary.LittleEndian, {{.Target}})
-		if err != nil {
-			return err
-		}
+		v := math.Float{{.Bits}}bits({{.Target}})
+		{{.IntCode}}
 	}`))
 	template.Must(FloatTemps.New("deserialize").Parse(`
 	{
-		err := binary.Read(r, binary.LittleEndian, &{{.Target}})
-		if err != nil {
-			return err
-		}
+		var v uint{{.Bits}}
+		{{.IntCode}}
+		{{.Target}} = math.Float{{.Bits}}frombits(v)
 	}`))
 	template.Must(FloatTemps.New("field").Parse(`float{{.Bits}}`))
 }
@@ -33,11 +31,21 @@ type FloatType struct {
 
 type FloatTemp struct {
 	FloatType
-	Target string
+	Target  string
+	IntCode string
 }
 
 func (i FloatType) GenerateSerialize(w io.Writer, target string) error {
-	err := FloatTemps.ExecuteTemplate(w, "serialize", FloatTemp{i, target})
+	intHandler := &IntType{
+		Bits:   i.Bits,
+		Signed: false,
+	}
+	intcode := &bytes.Buffer{}
+	err := intHandler.GenerateSerialize(intcode, "v")
+	if err != nil {
+		return err
+	}
+	err = FloatTemps.ExecuteTemplate(w, "serialize", FloatTemp{i, target, string(intcode.Bytes())})
 	if err != nil {
 		return err
 	}
@@ -45,7 +53,16 @@ func (i FloatType) GenerateSerialize(w io.Writer, target string) error {
 }
 
 func (i FloatType) GenerateDeserialize(w io.Writer, target string) error {
-	err := FloatTemps.ExecuteTemplate(w, "deserialize", FloatTemp{i, target})
+	intHandler := &IntType{
+		Bits:   i.Bits,
+		Signed: false,
+	}
+	intcode := &bytes.Buffer{}
+	err := intHandler.GenerateDeserialize(intcode, "v")
+	if err != nil {
+		return err
+	}
+	err = FloatTemps.ExecuteTemplate(w, "deserialize", FloatTemp{i, target, string(intcode.Bytes())})
 	if err != nil {
 		return err
 	}
