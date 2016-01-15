@@ -88,13 +88,19 @@ func MakeGrammar() *Grammar {
 
 	gSlice := And(Lit("[]"), Require(Tag("SubType", gType)))
 	gSlice.Node(func(m Match) (Match, error) {
-		u := &SliceType{
+		return &SliceType{
 			SubType: GetTag(m, "SubType").(Type),
-		}
-		return u, nil
+		}, nil
 	})
 
-	gType.Set(Or(gSlice, gIntField, gStringField, gFloatField, gUnion, gDeferField))
+	gPointer := And(Lit("*"), Require(Tag("SubType", gType)))
+	gPointer.Node(func(m Match) (Match, error) {
+		return &PointerType{
+			SubType: GetTag(m, "SubType").(Type),
+		}, nil
+	})
+
+	gType.Set(Or(gSlice, gPointer, gIntField, gStringField, gFloatField, gUnion, gDeferField))
 
 	gField := And(Tag("Name", gIdentifier), Require(RWS, Tag("Type", gType), NL))
 	gField.Node(func(m Match) (Match, error) {

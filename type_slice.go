@@ -28,7 +28,7 @@ func init() {
 		if err != nil {
 			return err
 		}
-		for _, v := range {{.Target}} {
+		for _, s := range {{.Target}} {
 			{{.SubTypeCode}}
 		}
 	}`))
@@ -45,10 +45,11 @@ func init() {
 			}
 			t |= uint64(buf[0]&0x7F)
 		}
-		{{.Target}} = make({{.Field}}, t)
-		for k, v := range {{.Target}} {
+		{{.Target}} = make([]{{.SubField}}, t)
+		for k := range {{.Target}} {
+			var s {{.SubField}}
 			{{.SubTypeCode}}
-			{{.Target}}[k] = v
+			{{.Target}}[k] = s
 		}
 	}`))
 	template.Must(SliceTemps.New("field").Parse(`[]`))
@@ -62,12 +63,12 @@ type SliceTemp struct {
 	SliceType
 	Target      string
 	SubTypeCode string
-	Field       string
+	SubField    string
 }
 
 func (s SliceType) GenerateSerialize(w io.Writer, target string) error {
 	subtype := &bytes.Buffer{}
-	err := s.SubType.GenerateSerialize(subtype, "v")
+	err := s.SubType.GenerateSerialize(subtype, "s")
 	if err != nil {
 		return err
 	}
@@ -80,16 +81,16 @@ func (s SliceType) GenerateSerialize(w io.Writer, target string) error {
 
 func (s SliceType) GenerateDeserialize(w io.Writer, target string) error {
 	subtype := &bytes.Buffer{}
-	err := s.SubType.GenerateDeserialize(subtype, "v")
+	err := s.SubType.GenerateDeserialize(subtype, "s")
 	if err != nil {
 		return err
 	}
-	field := &bytes.Buffer{}
-	err = s.GenerateField(field)
+	subfield := &bytes.Buffer{}
+	err = s.SubType.GenerateField(subfield)
 	if err != nil {
 		return err
 	}
-	err = SliceTemps.ExecuteTemplate(w, "deserialize", SliceTemp{s, target, string(subtype.Bytes()), string(field.Bytes())})
+	err = SliceTemps.ExecuteTemplate(w, "deserialize", SliceTemp{s, target, string(subtype.Bytes()), string(subfield.Bytes())})
 	if err != nil {
 		return err
 	}
