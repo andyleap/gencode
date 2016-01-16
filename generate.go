@@ -44,7 +44,8 @@ func (s *Struct) Generate(w io.Writer) error {
 	fmt.Fprintf(w, `
 }
 
-func (d *%s) Serialize(w io.Writer) error {`, s.Name)
+func (d *%s) Serialize(w io.Writer) error {
+	buf := []byte{0,0,0,0,0,0,0,0,0,0}`, s.Name)
 	for _, v := range s.Fields {
 		err := v.GenerateSerialize(w)
 		if err != nil {
@@ -55,7 +56,8 @@ func (d *%s) Serialize(w io.Writer) error {`, s.Name)
 	return nil
 }
 
-func (d *%s) Deserialize(r io.Reader) error {`, s.Name)
+func (d *%s) Deserialize(r io.Reader) error {
+	buf := []byte{0,0,0,0,0,0,0,0,0,0}`, s.Name)
 	for _, v := range s.Fields {
 		err := v.GenerateDeserialize(w)
 		if err != nil {
@@ -75,11 +77,15 @@ func (s *Schema) Generate(w io.Writer, Package string) error {
 import (
 	"math"
 	"io"
+	"reflect"
+	"unsafe"
 )
 
 var (
 	_ = io.ReadFull
 	_ = math.Float64frombits
+	_ = reflect.ValueOf
+	_ = unsafe.Sizeof(0)
 )
 
 `, Package)

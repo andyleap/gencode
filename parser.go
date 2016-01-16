@@ -48,6 +48,12 @@ func MakeGrammar() *Grammar {
 		}, nil
 	})
 
+	gByteField := And(Lit("byte"))
+	gByteField.Node(func(m Match) (Match, error) {
+		s := &ByteType{}
+		return s, nil
+	})
+
 	gStringField := And(Lit("string"))
 	gStringField.Node(func(m Match) (Match, error) {
 		s := &StringType{}
@@ -100,7 +106,7 @@ func MakeGrammar() *Grammar {
 		}, nil
 	})
 
-	gType.Set(Or(gSlice, gPointer, gIntField, gStringField, gFloatField, gUnion, gDeferField))
+	gType.Set(Or(gSlice, gPointer, gIntField, gByteField, gStringField, gFloatField, gUnion, gDeferField))
 
 	gField := And(Tag("Name", gIdentifier), Require(RWS, Tag("Type", gType), NL))
 	gField.Node(func(m Match) (Match, error) {

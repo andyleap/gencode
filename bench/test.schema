@@ -6,8 +6,14 @@ struct Person {
 
 struct Group {
 	Name string
-	Members []union{
-		Person
-		Group
-	}
+	Members []Person
+}
+
+struct A {
+	Name     string
+	BirthDay int64
+	Phone    string
+	Siblings int64
+	Spouse   uint8
+	Money    float64
 }

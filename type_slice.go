@@ -14,42 +14,46 @@ var (
 func init() {
 	SliceTemps = template.Must(template.New("serialize").Parse(`
 	{
-		t := uint64(len({{.Target}}))
-		buf := make([]byte, 10)
-		i := 0
-		for t >= 0x80 {
-			buf[i] = byte(t) | 0x80
-			t >>= 7
-			i++
-		}
-		buf[i] = byte(t)
-		i++
-		_, err := w.Write(buf[:i])
-		if err != nil {
-			return err
-		}
-		for _, s := range {{.Target}} {
+		l := uint64(len({{.Target}}))
+		{{.VarIntCode}}
+		for k := range {{.Target}} {
 			{{.SubTypeCode}}
 		}
 	}`))
 	template.Must(SliceTemps.New("deserialize").Parse(`
 	{
-		buf := make([]byte, 1)
-		buf[0] = 0x80
-		t := uint64(0)
-		for buf[0] & 0x80 == 0x80 {
-			t <<= 7
-			_, err := io.ReadFull(r, buf)
-			if err != nil {
-				return err
-			}
-			t |= uint64(buf[0]&0x7F)
+		l := uint64(0)
+		{{.VarIntCode}}
+		if uint64(cap({{.Target}})) >= l {
+			{{.Target}} = {{.Target}}[:l]
+		} else {
+			{{.Target}} = make([]{{.SubField}}, l)
 		}
-		{{.Target}} = make([]{{.SubField}}, t)
 		for k := range {{.Target}} {
-			var s {{.SubField}}
 			{{.SubTypeCode}}
-			{{.Target}}[k] = s
+		}
+	}`))
+	template.Must(SliceTemps.New("byteserialize").Parse(`
+	{
+		l := uint64(len({{.Target}}))
+		{{.VarIntCode}}
+		_, err := w.Write({{.Target}})
+		if err != nil {
+			return err
+		}
+	}`))
+	template.Must(SliceTemps.New("bytedeserialize").Parse(`
+	{
+		l := uint64(0)
+		{{.VarIntCode}}
+		if uint64(cap({{.Target}})) >= l {
+			{{.Target}} = {{.Target}}[:l]
+		} else {
+			{{.Target}} = make([]{{.SubField}}, l)
+		}
+		_, err := io.ReadFull(r, {{.Target}})
+		if err != nil {
+			return err
 		}
 	}`))
 	template.Must(SliceTemps.New("field").Parse(`[]`))
@@ -64,15 +68,29 @@ type SliceTemp struct {
 	Target      string
 	SubTypeCode string
 	SubField    string
+	VarIntCode  string
 }
 
 func (s SliceType) GenerateSerialize(w io.Writer, target string) error {
-	subtype := &bytes.Buffer{}
-	err := s.SubType.GenerateSerialize(subtype, "s")
+	intHandler := &VarIntType{
+		Bits:   64,
+		Signed: false,
+	}
+	intcode := &bytes.Buffer{}
+	err := intHandler.GenerateSerialize(intcode, "l")
 	if err != nil {
 		return err
 	}
-	err = SliceTemps.ExecuteTemplate(w, "serialize", SliceTemp{s, target, string(subtype.Bytes()), ""})
+	subtype := &bytes.Buffer{}
+	err = s.SubType.GenerateSerialize(subtype, target+"[k]")
+	if err != nil {
+		return err
+	}
+	if _, ok := s.SubType.(*ByteType); ok {
+		err = SliceTemps.ExecuteTemplate(w, "byteserialize", SliceTemp{s, target, string(subtype.Bytes()), "", string(intcode.Bytes())})
+	} else {
+		err = SliceTemps.ExecuteTemplate(w, "serialize", SliceTemp{s, target, string(subtype.Bytes()), "", string(intcode.Bytes())})
+	}
 	if err != nil {
 		return err
 	}
@@ -80,8 +98,17 @@ func (s SliceType) GenerateSerialize(w io.Writer, target string) error {
 }
 
 func (s SliceType) GenerateDeserialize(w io.Writer, target string) error {
+	intHandler := &VarIntType{
+		Bits:   64,
+		Signed: false,
+	}
+	intcode := &bytes.Buffer{}
+	err := intHandler.GenerateDeserialize(intcode, "l")
+	if err != nil {
+		return err
+	}
 	subtype := &bytes.Buffer{}
-	err := s.SubType.GenerateDeserialize(subtype, "s")
+	err = s.SubType.GenerateDeserialize(subtype, target+"[k]")
 	if err != nil {
 		return err
 	}
@@ -90,7 +117,11 @@ func (s SliceType) GenerateDeserialize(w io.Writer, target string) error {
 	if err != nil {
 		return err
 	}
-	err = SliceTemps.ExecuteTemplate(w, "deserialize", SliceTemp{s, target, string(subtype.Bytes()), string(subfield.Bytes())})
+	if _, ok := s.SubType.(*ByteType); ok {
+		err = SliceTemps.ExecuteTemplate(w, "bytedeserialize", SliceTemp{s, target, string(subtype.Bytes()), string(subfield.Bytes()), string(intcode.Bytes())})
+	} else {
+		err = SliceTemps.ExecuteTemplate(w, "deserialize", SliceTemp{s, target, string(subtype.Bytes()), string(subfield.Bytes()), string(intcode.Bytes())})
+	}
 	if err != nil {
 		return err
 	}

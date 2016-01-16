@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"io"
 	"text/template"
 )
@@ -12,44 +13,28 @@ var (
 func init() {
 	StringTemps = template.Must(template.New("serialize").Parse(`
 	{
-		t := uint64(len({{.Target}}))
-		buf := make([]byte, 10)
-		i := 0
-		for t >= 0x80 {
-			buf[i] = byte(t) | 0x80
-			t >>= 7
-			i++
+		l := uint64(len({{.Target}}))
+		{{.VarIntCode}}
+		var err error
+		if sw, ok := w.(interface{WriteString(s string) (n int, err error);}); ok {
+			_, err = sw.WriteString({{.Target}})
+		} else {
+			_, err = w.Write([]byte({{.Target}}))
 		}
-		buf[i] = byte(t)
-		i++
-		_, err := w.Write(buf[:i])
-		if err != nil {
-			return err
-		}
-		_, err = w.Write([]byte({{.Target}}))
 		if err != nil {
 			return err
 		}
 	}`))
 	template.Must(StringTemps.New("deserialize").Parse(`
 	{
-		buf := make([]byte, 1)
-		buf[0] = 0x80
-		t := uint64(0)
-		for buf[0] & 0x80 == 0x80 {
-			t <<= 7
-			_, err := io.ReadFull(r, buf)
-			if err != nil {
-				return err
-			}
-			t |= uint64(buf[0]&0x7F)
-		}
-		buf = make([]byte, t)
-		_, err := io.ReadFull(r, buf)
+		l := uint64(0)
+		{{.VarIntCode}}
+		sbuf := make([]byte, l)
+		_, err := io.ReadFull(r, sbuf)
 		if err != nil {
 			return err
 		}
-		{{.Target}} = string(buf)
+		{{.Target}} = *(*string)(unsafe.Pointer(&reflect.StringHeader{Data: uintptr(unsafe.Pointer(&sbuf[0])), Len: int(l)}))
 	}`))
 	template.Must(StringTemps.New("field").Parse(`string`))
 }
@@ -59,11 +44,21 @@ type StringType struct {
 
 type StringTemp struct {
 	StringType
-	Target string
+	Target     string
+	VarIntCode string
 }
 
 func (s StringType) GenerateSerialize(w io.Writer, target string) error {
-	err := StringTemps.ExecuteTemplate(w, "serialize", StringTemp{s, target})
+	intHandler := &VarIntType{
+		Bits:   64,
+		Signed: false,
+	}
+	intcode := &bytes.Buffer{}
+	err := intHandler.GenerateSerialize(intcode, "l")
+	if err != nil {
+		return err
+	}
+	err = StringTemps.ExecuteTemplate(w, "serialize", StringTemp{s, target, string(intcode.Bytes())})
 	if err != nil {
 		return err
 	}
@@ -71,7 +66,16 @@ func (s StringType) GenerateSerialize(w io.Writer, target string) error {
 }
 
 func (s StringType) GenerateDeserialize(w io.Writer, target string) error {
-	err := StringTemps.ExecuteTemplate(w, "deserialize", StringTemp{s, target})
+	intHandler := &VarIntType{
+		Bits:   64,
+		Signed: false,
+	}
+	intcode := &bytes.Buffer{}
+	err := intHandler.GenerateDeserialize(intcode, "l")
+	if err != nil {
+		return err
+	}
+	err = StringTemps.ExecuteTemplate(w, "deserialize", StringTemp{s, target, string(intcode.Bytes())})
 	if err != nil {
 		return err
 	}

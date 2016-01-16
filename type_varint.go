@@ -19,7 +19,6 @@ func init() {
    			t = ^t
    		}
 		{{end}}
-		buf := make([]byte, 10)
 		i := 0
 		for t >= 0x80 {
 			buf[i] = byte(t) | 0x80
@@ -35,21 +34,21 @@ func init() {
 	}`))
 	template.Must(VarIntTemps.New("deserialize").Parse(`
 	{
-		buf := make([]byte, 1)
 		buf[0] = 0x80
 		t := uint{{.Bits}}(0)
+		i := uint(0)
 		for buf[0] & 0x80 == 0x80 {
-			t <<= 7
-			_, err := io.ReadFull(r, buf)
+			_, err := r.Read(buf[0:1])
 			if err != nil {
 				return err
 			}
-			t |= {{if not .Signed}}u{{end}}int{{.Bits}}(buf[0]&0x7F)
+			t |= uint{{.Bits}}(buf[0]&0x7F) << i
+			i += 7
 		}
 		{{if .Signed}}
 		{{.Target}} = int{{.Bits}}(t >> 1)
 		if t&1 != 0 {
-			{{.Target}} = ^d.{{.Name}}
+			{{.Target}} = ^{{.Target}}
 		}
 		{{else}}
 		{{.Target}} = t

@@ -21,20 +21,18 @@ func init() {
 
 	template.Must(IntTemps.New("serialize").Parse(`
 	{
-		buf := make([]byte, {{Bytes .Bits}})
 		{{range BitRange .Bits}}
 		buf[{{Bytes .}}] = byte({{$.Target}} >> {{.}})
 		{{end}}
 		
-		_, err := w.Write(buf)
+		_, err := w.Write(buf[:{{Bytes .Bits}}])
 		if err != nil {
 			return err
 		}
 	}`))
 	template.Must(IntTemps.New("deserialize").Parse(`
 	{
-		buf := make([]byte, {{Bytes .Bits}})
-		_, err := io.ReadFull(r, buf)
+		_, err := io.ReadFull(r, buf[:{{Bytes .Bits}}])
 		if err != nil {
 			return err
 		}

@@ -1,0 +1,6 @@
+struct Fixed {
+	A int64
+	B uint32
+	C float32
+	D float64
+}

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"io"
 	"text/template"
 )
@@ -12,26 +13,15 @@ var (
 func init() {
 	UnionTemps = template.Must(template.New("serialize").Parse(`
 	{
-		var t uint64
+		var v uint64
 		switch {{.Target}}.(type) {
 			{{range $id, $struct := .Structs}}
 		case {{$struct.Struct.Name}}:
-			t = {{$id}}
+			v = {{$id}}
 			{{end}}
 		}
-		buf := make([]byte, 10)
-		i := 0
-		for t >= 0x80 {
-			buf[i] = byte(t) | 0x80
-			t >>= 7
-			i++
-		}
-		buf[i] = byte(t)
-		i++
-		_, err := w.Write(buf[:i])
-		if err != nil {
-			return err
-		}
+		{{.VarIntCode}}
+		var err error
 		switch tt := {{.Target}}.(type) {
 			{{range $id, $struct := .Structs}}
 		case {{$struct.Struct.Name}}:
@@ -44,18 +34,9 @@ func init() {
 	}`))
 	template.Must(UnionTemps.New("deserialize").Parse(`
 	{
-		buf := make([]byte, 1)
-		buf[0] = 0x80
-		t := uint64(0)
-		for buf[0] & 0x80 == 0x80 {
-			t <<= 7
-			_, err := io.ReadFull(r, buf)
-			if err != nil {
-				return err
-			}
-			t |= uint64(buf[0]&0x7F)
-		}
-		switch t {
+		v := uint64(0)
+		{{.VarIntCode}}
+		switch v {
 			{{range $id, $struct := .Structs}}
 		case {{$id}}:
 			tt := {{$struct.Struct.Name}}{}
@@ -95,11 +76,21 @@ func (ud *UnionDefer) Resolve(s *Schema) error {
 
 type UnionTemp struct {
 	UnionType
-	Target string
+	Target     string
+	VarIntCode string
 }
 
 func (u UnionType) GenerateSerialize(w io.Writer, target string) error {
-	err := UnionTemps.ExecuteTemplate(w, "serialize", UnionTemp{u, target})
+	intHandler := &VarIntType{
+		Bits:   64,
+		Signed: false,
+	}
+	intcode := &bytes.Buffer{}
+	err := intHandler.GenerateSerialize(intcode, "v")
+	if err != nil {
+		return err
+	}
+	err = UnionTemps.ExecuteTemplate(w, "serialize", UnionTemp{u, target, string(intcode.Bytes())})
 	if err != nil {
 		return err
 	}
@@ -107,7 +98,16 @@ func (u UnionType) GenerateSerialize(w io.Writer, target string) error {
 }
 
 func (u UnionType) GenerateDeserialize(w io.Writer, target string) error {
-	err := UnionTemps.ExecuteTemplate(w, "deserialize", UnionTemp{u, target})
+	intHandler := &VarIntType{
+		Bits:   64,
+		Signed: false,
+	}
+	intcode := &bytes.Buffer{}
+	err := intHandler.GenerateDeserialize(intcode, "v")
+	if err != nil {
+		return err
+	}
+	err = UnionTemps.ExecuteTemplate(w, "deserialize", UnionTemp{u, target, string(intcode.Bytes())})
 	if err != nil {
 		return err
 	}

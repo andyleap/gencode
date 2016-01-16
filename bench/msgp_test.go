@@ -4,9 +4,11 @@ import (
 	"bytes"
 	"fmt"
 	"testing"
+
+	"github.com/tinylib/msgp/msgp"
 )
 
-func TestGencodeSize(t *testing.T) {
+func TestMSGPSize(t *testing.T) {
 	p := Group{
 		Name: "test",
 		Members: []Person{
@@ -27,12 +29,11 @@ func TestGencodeSize(t *testing.T) {
 			},
 		},
 	}
-	buf := bytes.NewBuffer(nil)
-	p.Serialize(buf)
-	fmt.Printf("Gencode encoded size: %v\n", len(buf.Bytes()))
+	buf, _ := p.MarshalMsg(nil)
+	fmt.Printf("MSGP encoded size: %v\n", len(buf))
 }
 
-func BenchmarkGencodeSerialize(b *testing.B) {
+func BenchmarkMSGPSerialize(b *testing.B) {
 	p := Group{
 		Name: "test",
 		Members: []Person{
@@ -53,16 +54,16 @@ func BenchmarkGencodeSerialize(b *testing.B) {
 			},
 		},
 	}
-	buf := bytes.NewBuffer(nil)
+	buf := &bytes.Buffer{}
+	mbuf := msgp.NewWriter(buf)
 	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		p.Serialize(buf)
-		buf.Reset()
+		p.EncodeMsg(mbuf)
 	}
 }
 
-func BenchmarkGencodeDeserialize(b *testing.B) {
+func BenchmarkMSGPDeserialize(b *testing.B) {
 	p := Group{
 		Name: "test",
 		Members: []Person{
@@ -83,45 +84,13 @@ func BenchmarkGencodeDeserialize(b *testing.B) {
 			},
 		},
 	}
-	buf := bytes.NewBuffer(nil)
-	p.Serialize(buf)
-	rbuf := bytes.NewReader(buf.Bytes())
+	buf, _ := p.MarshalMsg(nil)
+	rbuf := bytes.NewReader(buf)
+	mbuf := msgp.NewReader(rbuf)
 	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		p.Deserialize(rbuf)
 		rbuf.Seek(0, 0)
-	}
-}
-
-func BenchmarkFixedGencodeSerialize(b *testing.B) {
-	p := Fixed{
-		A: -5,
-		B: 6,
-		C: 6.7,
-		D: 12.65,
-	}
-	buf := bytes.NewBuffer(nil)
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		p.Serialize(buf)
-		buf.Reset()
-	}
-}
-
-func BenchmarkFixedGencodeDeserialize(b *testing.B) {
-	p := Fixed{
-		A: -5,
-		B: 6,
-		C: 6.7,
-		D: 12.65,
-	}
-	buf := bytes.NewBuffer(nil)
-	p.Serialize(buf)
-	rbuf := bytes.NewReader(buf.Bytes())
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		p.Deserialize(rbuf)
-		rbuf.Seek(0, 0)
+		p.DecodeMsg(mbuf)
 	}
 }
