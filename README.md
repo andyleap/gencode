@@ -56,3 +56,28 @@ struct Message {
 ```
 The Request field will be declared of type Command, which will be must to be an interface that all the types in that union implement.
 
+# Speed
+
+Gencode encodes to smaller amounts of data, and does so very fast.  Some benchmarks:
+```
+Gencode encoded size: 47
+GOB encoded size: 182
+GOB Stream encoded size: 62
+JSON encoded size: 138
+MSGP encoded size: 115
+PASS
+BenchmarkFixedBinarySerialize-8          2000000               853 ns/op
+BenchmarkFixedBinaryDeserialize-8        3000000               518 ns/op
+BenchmarkGencodeSerialize-8              3000000               411 ns/op
+BenchmarkGencodeDeserialize-8            2000000               622 ns/op
+BenchmarkFixedGencodeSerialize-8         5000000               269 ns/op
+BenchmarkFixedGencodeDeserialize-8       5000000               285 ns/op
+BenchmarkGobSerialize-8                   200000              9049 ns/op
+BenchmarkGobDeserialize-8                  50000             38447 ns/op
+BenchmarkGobStreamSerialize-8            1000000              1654 ns/op
+BenchmarkGobStreamDeserialize-8          1000000              2057 ns/op
+BenchmarkJSONSerialize-8                  500000              2713 ns/op
+BenchmarkJSONDeserialize-8                300000              5194 ns/op
+BenchmarkMSGPSerialize-8                 5000000               424 ns/op
+BenchmarkMSGPDeserialize-8               2000000               863 ns/op
+```
