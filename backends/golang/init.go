@@ -1,6 +1,10 @@
 package golang
 
-import "github.com/andyleap/gencode/schema"
+import (
+	"go/format"
+
+	"github.com/andyleap/gencode/schema"
+)
 
 var (
 	GolangBackend = &schema.Backend{
@@ -9,7 +13,11 @@ var (
 			if err != nil {
 				return "", err
 			}
-			return def.String(), nil
+			out, err := format.Source([]byte(def.String()))
+			if err != nil {
+				return "", err
+			}
+			return string(out), nil
 		},
 	}
 )
