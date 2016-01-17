@@ -113,7 +113,13 @@ func (d *Person) Deserialize(r io.Reader) error {
 		
 	}
 		sbuf := make([]byte, l)
-		_, err := io.ReadFull(r, sbuf)
+		var err error
+		n := uint64(0)
+		for n < l && err == nil {
+			var nn int
+			nn, err = r.Read(sbuf[n:])
+			n += uint64(nn)
+		}
 		if err != nil {
 			return err
 		}
@@ -249,7 +255,13 @@ func (d *Group) Deserialize(r io.Reader) error {
 		
 	}
 		sbuf := make([]byte, l)
-		_, err := io.ReadFull(r, sbuf)
+		var err error
+		n := uint64(0)
+		for n < l && err == nil {
+			var nn int
+			nn, err = r.Read(sbuf[n:])
+			n += uint64(nn)
+		}
 		if err != nil {
 			return err
 		}
@@ -472,7 +484,13 @@ func (d *A) Deserialize(r io.Reader) error {
 		
 	}
 		sbuf := make([]byte, l)
-		_, err := io.ReadFull(r, sbuf)
+		var err error
+		n := uint64(0)
+		for n < l && err == nil {
+			var nn int
+			nn, err = r.Read(sbuf[n:])
+			n += uint64(nn)
+		}
 		if err != nil {
 			return err
 		}
@@ -521,7 +539,13 @@ func (d *A) Deserialize(r io.Reader) error {
 		
 	}
 		sbuf := make([]byte, l)
-		_, err := io.ReadFull(r, sbuf)
+		var err error
+		n := uint64(0)
+		for n < l && err == nil {
+			var nn int
+			nn, err = r.Read(sbuf[n:])
+			n += uint64(nn)
+		}
 		if err != nil {
 			return err
 		}
