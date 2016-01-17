@@ -1,4 +1,4 @@
-package main
+package schema
 
 import (
 	"strconv"
@@ -31,9 +31,10 @@ func MakeGrammar() *Grammar {
 				Bits:   int(bits),
 			}, nil
 		}
-		return &VarIntType{
+		return &IntType{
 			Signed: signed,
 			Bits:   int(bits),
+			VarInt: true,
 		}, nil
 	})
 
@@ -68,16 +69,10 @@ func MakeGrammar() *Grammar {
 		return s, nil
 	})
 
-	gUnionDefer := And(gIdentifier)
-	gUnionDefer.Node(func(m Match) (Match, error) {
-		s := &UnionDefer{
-			Defer: String(m),
-		}
-		return s, nil
-	})
+	gType := &Grammar{}
 
 	gUnion := And(Lit("union"), Optional(And(RWS, Tag("Interface", gIdentifier))), WS, Lit("{"), WS,
-		Mult(0, 0, And(WS, Tag("Defer", gUnionDefer), NL)),
+		Mult(0, 0, And(WS, Tag("Defer", gType), NL)),
 		Lit("}"),
 	)
 	gUnion.Node(func(m Match) (Match, error) {
@@ -85,12 +80,10 @@ func MakeGrammar() *Grammar {
 			Interface: String(GetTag(m, "Interface")),
 		}
 		for _, v := range GetTags(m, "Defer") {
-			u.Structs = append(u.Structs, v.(*UnionDefer))
+			u.Types = append(u.Types, v.(Type))
 		}
 		return u, nil
 	})
-
-	gType := &Grammar{}
 
 	gSlice := And(Lit("[]"), Require(Tag("SubType", gType)))
 	gSlice.Node(func(m Match) (Match, error) {

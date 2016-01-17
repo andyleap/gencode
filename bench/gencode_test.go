@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"fmt"
 	"testing"
 )
@@ -27,9 +26,8 @@ func TestGencodeSize(t *testing.T) {
 			},
 		},
 	}
-	buf := bytes.NewBuffer(nil)
-	p.Serialize(buf)
-	fmt.Printf("Gencode encoded size: %v\n", len(buf.Bytes()))
+	buf, _ := p.Marshal(nil)
+	fmt.Printf("Gencode encoded size: %v\n", len(buf))
 }
 
 func BenchmarkGencodeSerialize(b *testing.B) {
@@ -53,12 +51,10 @@ func BenchmarkGencodeSerialize(b *testing.B) {
 			},
 		},
 	}
-	buf := bytes.NewBuffer(nil)
 	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		p.Serialize(buf)
-		buf.Reset()
+		p.Marshal(nil)
 	}
 }
 
@@ -83,14 +79,11 @@ func BenchmarkGencodeDeserialize(b *testing.B) {
 			},
 		},
 	}
-	buf := bytes.NewBuffer(nil)
-	p.Serialize(buf)
-	rbuf := bytes.NewReader(buf.Bytes())
+	buf, _ := p.Marshal(nil)
 	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		p.Deserialize(rbuf)
-		rbuf.Seek(0, 0)
+		p.Unmarshal(buf)
 	}
 }
 
@@ -101,11 +94,9 @@ func BenchmarkFixedGencodeSerialize(b *testing.B) {
 		C: 6.7,
 		D: 12.65,
 	}
-	buf := bytes.NewBuffer(nil)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		p.Serialize(buf)
-		buf.Reset()
+		p.Marshal(nil)
 	}
 }
 
@@ -116,12 +107,9 @@ func BenchmarkFixedGencodeDeserialize(b *testing.B) {
 		C: 6.7,
 		D: 12.65,
 	}
-	buf := bytes.NewBuffer(nil)
-	p.Serialize(buf)
-	rbuf := bytes.NewReader(buf.Bytes())
+	buf, _ := p.Marshal(nil)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		p.Deserialize(rbuf)
-		rbuf.Seek(0, 0)
+		p.Unmarshal(buf)
 	}
 }

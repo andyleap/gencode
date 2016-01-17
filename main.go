@@ -3,10 +3,14 @@ package main
 
 import (
 	"flag"
+	"io/ioutil"
 	"log"
 	"os"
 
+	"github.com/andyleap/gencode/schema"
 	"github.com/kr/pretty"
+
+	_ "github.com/andyleap/gencode/backends/golang"
 )
 
 var (
@@ -32,7 +36,7 @@ func main() {
 		log.Fatalf("error opening file %s", file)
 	}
 
-	s, err := ParseSchema(file)
+	s, err := schema.ParseSchema(file)
 
 	if *Verbose {
 		pretty.Print(s)
@@ -42,14 +46,16 @@ func main() {
 		log.Fatalf("Error parsing schema: %s", err)
 	}
 
-	outfile, err := os.OpenFile(*SchemaFile+".gen.go", os.O_CREATE|os.O_TRUNC, 0666)
+	code, err := schema.Backends["go"].Generate(s)
 
-	if err != nil {
-		log.Fatalf("Error opening output file: %s", err)
-	}
-
-	err = s.Generate(outfile, *Package)
 	if err != nil {
 		log.Fatalf("Error generating output: %s", err)
 	}
+
+	err = ioutil.WriteFile(*SchemaFile+".gen.go", []byte(code), 0666)
+
+	if err != nil {
+		log.Fatalf("Error writing output file: %s", err)
+	}
+
 }
