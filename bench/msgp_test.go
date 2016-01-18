@@ -1,11 +1,8 @@
 package main
 
 import (
-	"bytes"
 	"fmt"
 	"testing"
-
-	"github.com/tinylib/msgp/msgp"
 )
 
 func TestMSGPSize(t *testing.T) {
@@ -54,12 +51,10 @@ func BenchmarkMSGPSerialize(b *testing.B) {
 			},
 		},
 	}
-	buf := &bytes.Buffer{}
-	mbuf := msgp.NewWriter(buf)
 	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		p.EncodeMsg(mbuf)
+		p.MarshalMsg(nil)
 	}
 }
 
@@ -85,12 +80,9 @@ func BenchmarkMSGPDeserialize(b *testing.B) {
 		},
 	}
 	buf, _ := p.MarshalMsg(nil)
-	rbuf := bytes.NewReader(buf)
-	mbuf := msgp.NewReader(rbuf)
 	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		rbuf.Seek(0, 0)
-		p.DecodeMsg(mbuf)
+		p.UnmarshalMsg(buf)
 	}
 }
