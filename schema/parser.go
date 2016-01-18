@@ -55,6 +55,12 @@ func MakeGrammar() *Grammar {
 		return s, nil
 	})
 
+	gBoolField := And(Lit("bool"))
+	gBoolField.Node(func(m Match) (Match, error) {
+		s := &BoolType{}
+		return s, nil
+	})
+
 	gStringField := And(Lit("string"))
 	gStringField.Node(func(m Match) (Match, error) {
 		s := &StringType{}
@@ -111,7 +117,7 @@ func MakeGrammar() *Grammar {
 		}, nil
 	})
 
-	gType.Set(Or(gSlice, gArray, gPointer, gIntField, gByteField, gStringField, gFloatField, gUnion, gDeferField))
+	gType.Set(Or(gSlice, gArray, gPointer, gIntField, gByteField, gBoolField, gStringField, gFloatField, gUnion, gDeferField))
 
 	gField := And(Tag("Name", gIdentifier), Require(RWS, Tag("Type", gType), NL))
 	gField.Node(func(m Match) (Match, error) {

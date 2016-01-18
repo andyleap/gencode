@@ -92,6 +92,9 @@ func (at *ArrayType) Resolve(s *Schema) error {
 	return nil
 }
 
+type BoolType struct {
+}
+
 type ByteType struct {
 }
 

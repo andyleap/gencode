@@ -38,7 +38,8 @@ func WalkByteDef(bt *schema.ByteType) (parts *StringBuilder, err error) {
 
 func WalkByteSize(bt *schema.ByteType, target string) (parts *StringBuilder, err error) {
 	parts = &StringBuilder{}
-	parts.Append("s += 1")
+	parts.Append(`
+	s += 1`)
 	return
 }
 

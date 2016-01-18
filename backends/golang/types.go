@@ -10,6 +10,8 @@ func WalkTypeDef(t schema.Type) (*StringBuilder, error) {
 	switch tt := t.(type) {
 	case *schema.ArrayType:
 		return WalkArrayDef(tt)
+	case *schema.BoolType:
+		return WalkBoolDef(tt)
 	case *schema.ByteType:
 		return WalkByteDef(tt)
 	case *schema.DeferType:
@@ -36,6 +38,8 @@ func WalkTypeSize(t schema.Type, target string) (*StringBuilder, error) {
 	switch tt := t.(type) {
 	case *schema.ArrayType:
 		return WalkArraySize(tt, target)
+	case *schema.BoolType:
+		return WalkBoolSize(tt, target)
 	case *schema.ByteType:
 		return WalkByteSize(tt, target)
 	case *schema.DeferType:
@@ -62,6 +66,8 @@ func WalkTypeMarshal(t schema.Type, target string) (*StringBuilder, error) {
 	switch tt := t.(type) {
 	case *schema.ArrayType:
 		return WalkArrayMarshal(tt, target)
+	case *schema.BoolType:
+		return WalkBoolMarshal(tt, target)
 	case *schema.ByteType:
 		return WalkByteMarshal(tt, target)
 	case *schema.DeferType:
@@ -88,6 +94,8 @@ func WalkTypeUnmarshal(t schema.Type, target string) (*StringBuilder, error) {
 	switch tt := t.(type) {
 	case *schema.ArrayType:
 		return WalkArrayUnmarshal(tt, target)
+	case *schema.BoolType:
+		return WalkBoolUnmarshal(tt, target)
 	case *schema.ByteType:
 		return WalkByteUnmarshal(tt, target)
 	case *schema.DeferType:

@@ -15,7 +15,7 @@ var (
 			}
 			out, err := format.Source([]byte(def.String()))
 			if err != nil {
-				return "", err
+				return def.String(), nil
 			}
 			return string(out), nil
 		},
