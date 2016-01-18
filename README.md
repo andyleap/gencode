@@ -26,7 +26,7 @@ Integer data types consist of both signed and unsigned ints, in 8, 16, 32, and 6
 Float types are allowed in either 32 or 64 bit lengths.
 
 ### String
-Strings are encoded with a prefixed `vuint64`, so short strings only require a 1 or 2 byte prefix, but strings of practically any length can be used.
+Strings are encoded with a prefixed `vuint64` for length, so short strings only require a 1 or 2 byte prefix, but strings of practically any length can be used.
 
 ### Byte
 Bytes are basically an alias to uint8, though there is an optimization for a slice of bytes, i.e. []byte
