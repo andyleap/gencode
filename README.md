@@ -12,7 +12,7 @@ struct Person {
 ```
 # Data Types
 ## Struct
-Structs are built, similar to native Go, from various fields of various types.  The format is slightly different, putting the `struct` keyword in front of the name of the struct, and dropping the `type` keyword, in order to differentiate Gencode schemas from Go code.  Structs may optionally be "framed", adding `Serialize` and `Deserialize` functions taking a `io.Writer` or `io.Reader` respectively.  These structs have a prefixed `vuint64` for the length of the whole struct, minus the prefix length.  This allows efficient reading from network sockets and other streams.
+Structs are built, similar to native Go, from various fields of various types.  The format is slightly different, putting the `struct` keyword in front of the name of the struct and dropping the `type` keyword, in order to differentiate Gencode schemas from Go code.  Structs may optionally be "framed", adding `Serialize` and `Deserialize` functions taking a `io.Writer` or `io.Reader` respectively.  These structs have a prefixed `vuint64` for the length of the whole struct, minus the prefix length.  This allows efficient reading from network sockets and other streams.
 
 ### Int
 Integer data types consist of both signed and unsigned ints, in 8, 16, 32, and 64 bit lengths.  In addition, any type can be varint encoded by prefixing it with the letter `v`.  Some examples:
