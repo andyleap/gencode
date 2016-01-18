@@ -12,7 +12,7 @@ struct Person {
 ```
 # Data Types
 ## Struct
-Structs are built, similar to native Go, from various fields of various types.  The format is slightly different, putting the `struct` keyword in front of the name of the struct, and dropping the `type` keyword, in order to differentiate Gencode schemas from Go code.
+Structs are built, similar to native Go, from various fields of various types.  The format is slightly different, putting the `struct` keyword in front of the name of the struct, and dropping the `type` keyword, in order to differentiate Gencode schemas from Go code.  Structs may optionally be "framed", adding `Serialize` and `Deserialize` functions taking a `io.Writer` or `io.Reader` respectively.  These structs have a prefixed `vuint64` for the length of the whole struct, minus the prefix length.  This allows efficient reading from network sockets and other streams.
 
 ### Int
 Integer data types consist of both signed and unsigned ints, in 8, 16, 32, and 64 bit lengths.  In addition, any type can be varint encoded by prefixing it with the letter `v`.  Some examples:
@@ -30,6 +30,14 @@ Strings are encoded with a prefixed `vuint64` for length, so short strings only 
 
 ### Byte
 Bytes are basically an alias to uint8, though there is an optimization for a slice of bytes, i.e. []byte
+
+### Bool
+Bools are stored as either a 0 or a 1 for false or true
+
+### Fixed Length Arrays
+Fixed Length Arrays as encoded as the designated number of elements, with no length prefix.  Note that the number of elements is fixed, but the elements themselves may take a variable number of bytes to actually encode.  Examples:
+* `[5]vuint64`
+* `[16]float64`
 
 ### Slices
 Slices, as in go, are a variable length sequence that can be made out of any other valid gencode type.  Slices are also prefixed with a `vuint64` for length.  Examples:
@@ -73,24 +81,24 @@ The Request field will be declared of type Command, which must be an interface t
 
 Gencode encodes to smaller amounts of data, and does so very fast.  Some benchmarks (using schemas and test files located in the bench folder):
 ```
-Gencode encoded size: 47
+Gencode encoded size: 48
 GOB encoded size: 182
 GOB Stream encoded size: 62
 JSON encoded size: 138
 MSGP encoded size: 115
 PASS
-BenchmarkFixedBinarySerialize-8          2000000               890 ns/op
-BenchmarkFixedBinaryDeserialize-8        3000000               532 ns/op
-BenchmarkGencodeSerialize-8             10000000               173 ns/op
-BenchmarkGencodeDeserialize-8           10000000               221 ns/op
+BenchmarkFixedBinarySerialize-8          2000000               894 ns/op
+BenchmarkFixedBinaryDeserialize-8        3000000               539 ns/op
+BenchmarkGencodeSerialize-8             10000000               174 ns/op
+BenchmarkGencodeDeserialize-8           10000000               219 ns/op
 BenchmarkFixedGencodeSerialize-8        20000000                75.7 ns/op
-BenchmarkFixedGencodeDeserialize-8      100000000               20.5 ns/op
-BenchmarkGobSerialize-8                   200000              9255 ns/op
-BenchmarkGobDeserialize-8                  30000             40504 ns/op
-BenchmarkGobStreamSerialize-8            1000000              1677 ns/op
-BenchmarkGobStreamDeserialize-8          1000000              2127 ns/op
+BenchmarkFixedGencodeDeserialize-8      100000000               20.7 ns/op
+BenchmarkGobSerialize-8                   200000              9370 ns/op
+BenchmarkGobDeserialize-8                  30000             40337 ns/op
+BenchmarkGobStreamSerialize-8            1000000              1694 ns/op
+BenchmarkGobStreamDeserialize-8          1000000              2125 ns/op
 BenchmarkJSONSerialize-8                  500000              2780 ns/op
-BenchmarkJSONDeserialize-8                300000              5337 ns/op
-BenchmarkMSGPSerialize-8                 5000000               278 ns/op
-BenchmarkMSGPDeserialize-8               2000000               609 ns/op
+BenchmarkJSONDeserialize-8                300000              5263 ns/op
+BenchmarkMSGPSerialize-8                 5000000               277 ns/op
+BenchmarkMSGPDeserialize-8               2000000               608 ns/op
 ```
