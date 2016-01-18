@@ -92,6 +92,18 @@ func MakeGrammar() *Grammar {
 		}, nil
 	})
 
+	gArray := And(Lit("["), Tag("Count", Mult(1, 0, Digit)), Lit("]"), Require(Tag("SubType", gType)))
+	gArray.Node(func(m Match) (Match, error) {
+		count, err := strconv.ParseUint(String(GetTag(m, "Count")), 10, 64)
+		if err != nil {
+			return nil, err
+		}
+		return &ArrayType{
+			SubType: GetTag(m, "SubType").(Type),
+			Count:   count,
+		}, nil
+	})
+
 	gPointer := And(Lit("*"), Require(Tag("SubType", gType)))
 	gPointer.Node(func(m Match) (Match, error) {
 		return &PointerType{
@@ -99,7 +111,7 @@ func MakeGrammar() *Grammar {
 		}, nil
 	})
 
-	gType.Set(Or(gSlice, gPointer, gIntField, gByteField, gStringField, gFloatField, gUnion, gDeferField))
+	gType.Set(Or(gSlice, gArray, gPointer, gIntField, gByteField, gStringField, gFloatField, gUnion, gDeferField))
 
 	gField := And(Tag("Name", gIdentifier), Require(RWS, Tag("Type", gType), NL))
 	gField.Node(func(m Match) (Match, error) {
@@ -110,7 +122,7 @@ func MakeGrammar() *Grammar {
 		return TagMatch("Field", f), nil
 	})
 
-	gStruct := And(Lit("struct"), Require(RWS, Tag("Name", gIdentifier), WS, Lit("{"), WS,
+	gStruct := And(Lit("struct"), Require(RWS, Tag("Name", gIdentifier), Optional(And(RWS, Tag("Framed", Lit("framed")))), WS, Lit("{"), WS,
 		Mult(0, 0, gField),
 		Lit("}"), WS,
 	))
@@ -120,6 +132,9 @@ func MakeGrammar() *Grammar {
 		}
 		for _, v := range GetTags(m, "Field") {
 			s.Fields = append(s.Fields, v.(*Field))
+		}
+		if GetTag(m, "Framed") != nil {
+			s.Framed = true
 		}
 		return TagMatch("Struct", s), nil
 	})

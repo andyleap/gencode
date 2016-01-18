@@ -4,7 +4,7 @@ struct Person {
 	Height float64
 }
 
-struct Group {
+struct Group framed {
 	Name string
 	Members []Person
 }

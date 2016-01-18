@@ -31,6 +31,8 @@ func init() {
 			}
 			i++
 			{{.SubTypeCode}}
+		} else {
+			{{.Target}} = nil
 		}
 	}`))
 	template.Must(PointerTemps.New("size").Parse(`

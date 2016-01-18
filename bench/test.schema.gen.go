@@ -1,11 +1,13 @@
 package main
 
 import (
+	"io"
 	"math"
 )
 
 var (
 	_ = math.Float64frombits
+	_ = io.ReadFull
 )
 
 type Person struct {
@@ -39,10 +41,9 @@ func (d *Person) Size() (s uint64) {
 	}
 	return
 }
-
 func (d *Person) Marshal(buf []byte) ([]byte, error) {
+	size := d.Size()
 	{
-		size := d.Size()
 		if uint64(cap(buf)) >= d.Size() {
 			buf = buf[:size]
 		} else {
@@ -173,7 +174,7 @@ type Group struct {
 	Members []Person
 }
 
-func (d *Group) Size() (s uint64) {
+func (d *Group) FramedSize() (s uint64, us uint64) {
 
 	{
 		l := uint64(len(d.Name))
@@ -210,12 +211,29 @@ func (d *Group) Size() (s uint64) {
 			}
 		}
 	}
+	l := s
+	us = s
+
+	{
+
+		t := l
+		for t >= 0x80 {
+			t <<= 7
+			s++
+		}
+		s++
+
+	}
+	return
+}
+func (d *Group) Size() (s uint64) {
+	s, _ = d.FramedSize()
 	return
 }
 
 func (d *Group) Marshal(buf []byte) ([]byte, error) {
+	size, usize := d.FramedSize()
 	{
-		size := d.Size()
 		if uint64(cap(buf)) >= d.Size() {
 			buf = buf[:size]
 		} else {
@@ -224,6 +242,19 @@ func (d *Group) Marshal(buf []byte) ([]byte, error) {
 	}
 	i := uint64(0)
 
+	{
+
+		t := uint64(usize)
+
+		for t >= 0x80 {
+			buf[i] = byte(t) | 0x80
+			t >>= 7
+			i++
+		}
+		buf[i] = byte(t)
+		i++
+
+	}
 	{
 		l := uint64(len(d.Name))
 
@@ -275,7 +306,25 @@ func (d *Group) Marshal(buf []byte) ([]byte, error) {
 
 func (d *Group) Unmarshal(buf []byte) (uint64, error) {
 	i := uint64(0)
+	usize := uint64(0)
 
+	{
+
+		bs := uint8(7)
+		t := uint64(buf[i] & 0x7F)
+		for buf[i]&0x80 == 0x80 {
+			i++
+			t |= uint64(buf[i]&0x7F) << bs
+			bs += 7
+		}
+		i++
+
+		usize = t
+
+	}
+	if usize > uint64(len(buf))+i {
+		return 0, io.EOF
+	}
 	{
 		l := uint64(0)
 
@@ -330,6 +379,52 @@ func (d *Group) Unmarshal(buf []byte) (uint64, error) {
 		}
 	}
 	return i, nil
+}
+
+func (d *Group) Serialize(w io.Writer) error {
+	buf, err := d.Marshal(nil)
+	if err != nil {
+		return err
+	}
+	_, err = w.Write(buf)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (d *Group) Deserialize(r io.Reader) error {
+	size := uint64(0)
+	sbuf := []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+	bs := uint8(0)
+	i := uint64(0)
+	for sbuf[i]&0x80 == 0x80 {
+		_, err := r.Read(sbuf[i : i+1])
+		if err != nil {
+			return err
+		}
+		size |= uint64(sbuf[i]&0x7F) << bs
+		bs += 7
+		i++
+	}
+	buf := make([]byte, size+i)
+	copy(buf, sbuf[0:i])
+	n := uint64(i)
+	size += i
+	var err error
+	for n < size && err == nil {
+		var nn int
+		nn, err = r.Read(buf[n:])
+		n += uint64(nn)
+	}
+	if err != nil {
+		return err
+	}
+	_, err = d.Unmarshal(buf)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 type A struct {
@@ -387,10 +482,9 @@ func (d *A) Size() (s uint64) {
 	}
 	return
 }
-
 func (d *A) Marshal(buf []byte) ([]byte, error) {
+	size := d.Size()
 	{
-		size := d.Size()
 		if uint64(cap(buf)) >= d.Size() {
 			buf = buf[:size]
 		} else {

@@ -12,10 +12,12 @@ func WalkSchema(s *schema.Schema) (parts *StringBuilder, err error) {
 	
 	import (
 		"math"
+		"io"
 	)
 	
 	var (
 		_ = math.Float64frombits
+		_ = io.ReadFull
 	)
 	`))
 	for _, st := range s.Structs {

@@ -31,6 +31,7 @@ type Field struct {
 type Struct struct {
 	Name   string
 	Fields []*Field
+	Framed bool
 }
 
 type Schema struct {
@@ -74,6 +75,21 @@ type ResolveError struct {
 
 func (r ResolveError) Error() string {
 	return fmt.Sprintf("Can't resolve %s", r.Defer)
+}
+
+type ArrayType struct {
+	SubType Type
+	Count   uint64
+}
+
+func (at *ArrayType) Resolve(s *Schema) error {
+	if rt, ok := at.SubType.(ResolveType); ok {
+		err := rt.Resolve(s)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 type ByteType struct {
