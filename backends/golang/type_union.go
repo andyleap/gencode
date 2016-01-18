@@ -19,7 +19,7 @@ func init() {
 		switch {{.Target}}.(type) {
 			{{range $id, $struct := .Structs}}
 		case {{$struct.Struct.Name}}:
-			v = {{$id}}
+			v = {{$id}} + 1
 			{{end}}
 		}
 		{{.VarIntCode}}
@@ -36,11 +36,13 @@ func init() {
 		{{.VarIntCode}}
 		switch v {
 			{{range $id, $struct := .Structs}}
-		case {{$id}}:
+		case {{$id}} + 1:
 			var tt {{index $.SubTypeField $id}}
 			{{index $.SubTypeCode $id}}
 			{{$.Target}} = tt
 			{{end}}
+		default:
+			{{.Target}} = nil
 		}
 	}`))
 	template.Must(UnionTemps.New("size").Parse(`
@@ -49,7 +51,7 @@ func init() {
 		switch {{.Target}}.(type) {
 			{{range $id, $struct := .Structs}}
 		case {{$struct.Struct.Name}}:
-			v = {{$id}}
+			v = {{$id}} + 1
 			{{end}}
 		}
 		{{.VarIntCode}}
