@@ -2,7 +2,7 @@
 package main
 
 import (
-	"flag"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
@@ -13,20 +13,34 @@ import (
 	_ "github.com/andyleap/gencode/backends/golang"
 )
 
-var (
-	SchemaFile = flag.String("schema", "", "Schema to generate gencode for")
-	Package    = flag.String("package", "main", "Package to place code in")
-	Verbose    = flag.Bool("verbose", false, "Pretty print the schema for debugging")
-)
-
 func main() {
-	flag.Parse()
+	if len(os.Args) == 1 {
+		os.Exit(1)
+	}
+	backend, ok := schema.Backends[os.Args[1]]
+	if !ok {
+		fmt.Fprintln(os.Stderr, "No such backend, available backends are:")
+		for name := range schema.Backends {
+			fmt.Fprintln(os.Stderr, name)
+		}
+		os.Exit(1)
+	}
 
-	if *SchemaFile == "" {
+	flags := backend.Flags()
+
+	SchemaFile := ""
+	Debug := false
+
+	flags.StringVar(&SchemaFile, "schema", "", "Schema file to process")
+	flags.BoolVar(&Debug, "debug", false, "Pretty print the resulting schema defs")
+
+	flags.Parse(os.Args[2:])
+
+	if SchemaFile == "" {
 		log.Fatal("No file specified")
 	}
 
-	file, err := os.Open(*SchemaFile)
+	file, err := os.Open(SchemaFile)
 
 	if err != nil {
 		log.Fatalf("Error opening schema file: %s", err)
@@ -38,7 +52,7 @@ func main() {
 
 	s, err := schema.ParseSchema(file)
 
-	if *Verbose {
+	if Debug {
 		pretty.Print(s)
 	}
 
@@ -46,13 +60,13 @@ func main() {
 		log.Fatalf("Error parsing schema: %s", err)
 	}
 
-	code, err := schema.Backends["go"].Generate(s)
+	code, err := backend.Generate(s)
 
 	if err != nil {
 		log.Fatalf("Error generating output: %s", err)
 	}
 
-	err = ioutil.WriteFile(*SchemaFile+".gen.go", []byte(code), 0666)
+	err = ioutil.WriteFile(backend.GeneratedFilename(SchemaFile), []byte(code), 0666)
 
 	if err != nil {
 		log.Fatalf("Error writing output file: %s", err)

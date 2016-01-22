@@ -1,11 +1,13 @@
 package main
 
 import (
-	"math"
+	"io"
+	"unsafe"
 )
 
 var (
-	_ = math.Float64frombits
+	_ = unsafe.Sizeof(0)
+	_ = io.ReadFull
 )
 
 type Fixed struct {
@@ -17,25 +19,13 @@ type Fixed struct {
 
 func (d *Fixed) Size() (s uint64) {
 
-	{
-		s += 8
-	}
-	{
-		s += 4
-	}
-	{
-		s += 4
-	}
-	{
-		s += 8
-	}
+	s += 24
 	return
 }
-
 func (d *Fixed) Marshal(buf []byte) ([]byte, error) {
+	size := d.Size()
 	{
-		size := d.Size()
-		if uint64(cap(buf)) >= d.Size() {
+		if uint64(cap(buf)) >= size {
 			buf = buf[:size]
 		} else {
 			buf = make([]byte, size)
@@ -45,81 +35,69 @@ func (d *Fixed) Marshal(buf []byte) ([]byte, error) {
 
 	{
 
-		buf[i+0] = byte(d.A >> 0)
+		buf[0+0] = byte(d.A >> 0)
 
-		buf[i+1] = byte(d.A >> 8)
+		buf[1+0] = byte(d.A >> 8)
 
-		buf[i+2] = byte(d.A >> 16)
+		buf[2+0] = byte(d.A >> 16)
 
-		buf[i+3] = byte(d.A >> 24)
+		buf[3+0] = byte(d.A >> 24)
 
-		buf[i+4] = byte(d.A >> 32)
+		buf[4+0] = byte(d.A >> 32)
 
-		buf[i+5] = byte(d.A >> 40)
+		buf[5+0] = byte(d.A >> 40)
 
-		buf[i+6] = byte(d.A >> 48)
+		buf[6+0] = byte(d.A >> 48)
 
-		buf[i+7] = byte(d.A >> 56)
-
-		i += 8
+		buf[7+0] = byte(d.A >> 56)
 
 	}
 	{
 
-		buf[i+0] = byte(d.B >> 0)
+		buf[0+8] = byte(d.B >> 0)
 
-		buf[i+1] = byte(d.B >> 8)
+		buf[1+8] = byte(d.B >> 8)
 
-		buf[i+2] = byte(d.B >> 16)
+		buf[2+8] = byte(d.B >> 16)
 
-		buf[i+3] = byte(d.B >> 24)
-
-		i += 4
+		buf[3+8] = byte(d.B >> 24)
 
 	}
 	{
-		v := math.Float32bits(d.C)
 
-		{
+		v := *(*uint32)(unsafe.Pointer(&(d.C)))
 
-			buf[i+0] = byte(v >> 0)
+		buf[0+12] = byte(v >> 0)
 
-			buf[i+1] = byte(v >> 8)
+		buf[1+12] = byte(v >> 8)
 
-			buf[i+2] = byte(v >> 16)
+		buf[2+12] = byte(v >> 16)
 
-			buf[i+3] = byte(v >> 24)
+		buf[3+12] = byte(v >> 24)
 
-			i += 4
-
-		}
 	}
 	{
-		v := math.Float64bits(d.D)
 
-		{
+		v := *(*uint64)(unsafe.Pointer(&(d.D)))
 
-			buf[i+0] = byte(v >> 0)
+		buf[0+16] = byte(v >> 0)
 
-			buf[i+1] = byte(v >> 8)
+		buf[1+16] = byte(v >> 8)
 
-			buf[i+2] = byte(v >> 16)
+		buf[2+16] = byte(v >> 16)
 
-			buf[i+3] = byte(v >> 24)
+		buf[3+16] = byte(v >> 24)
 
-			buf[i+4] = byte(v >> 32)
+		buf[4+16] = byte(v >> 32)
 
-			buf[i+5] = byte(v >> 40)
+		buf[5+16] = byte(v >> 40)
 
-			buf[i+6] = byte(v >> 48)
+		buf[6+16] = byte(v >> 48)
 
-			buf[i+7] = byte(v >> 56)
+		buf[7+16] = byte(v >> 56)
 
-			i += 8
-
-		}
 	}
-	return buf[:i], nil
+	return buf[:i+24], nil
 }
 
 func (d *Fixed) Unmarshal(buf []byte) (uint64, error) {
@@ -127,89 +105,25 @@ func (d *Fixed) Unmarshal(buf []byte) (uint64, error) {
 
 	{
 
-		d.A = 0
-
-		d.A |= int64(buf[i+0]) << 0
-
-		d.A |= int64(buf[i+1]) << 8
-
-		d.A |= int64(buf[i+2]) << 16
-
-		d.A |= int64(buf[i+3]) << 24
-
-		d.A |= int64(buf[i+4]) << 32
-
-		d.A |= int64(buf[i+5]) << 40
-
-		d.A |= int64(buf[i+6]) << 48
-
-		d.A |= int64(buf[i+7]) << 56
-
-		i += 8
+		d.A = 0 | (int64(buf[0+0]) << 0) | (int64(buf[1+0]) << 8) | (int64(buf[2+0]) << 16) | (int64(buf[3+0]) << 24) | (int64(buf[4+0]) << 32) | (int64(buf[5+0]) << 40) | (int64(buf[6+0]) << 48) | (int64(buf[7+0]) << 56)
 
 	}
 	{
 
-		d.B = 0
-
-		d.B |= uint32(buf[i+0]) << 0
-
-		d.B |= uint32(buf[i+1]) << 8
-
-		d.B |= uint32(buf[i+2]) << 16
-
-		d.B |= uint32(buf[i+3]) << 24
-
-		i += 4
+		d.B = 0 | (uint32(buf[0+8]) << 0) | (uint32(buf[1+8]) << 8) | (uint32(buf[2+8]) << 16) | (uint32(buf[3+8]) << 24)
 
 	}
 	{
-		var v uint32
 
-		{
+		v := 0 | (uint32(buf[0+12]) << 0) | (uint32(buf[1+12]) << 8) | (uint32(buf[2+12]) << 16) | (uint32(buf[3+12]) << 24)
+		d.C = *(*float32)(unsafe.Pointer(&v))
 
-			v = 0
-
-			v |= uint32(buf[i+0]) << 0
-
-			v |= uint32(buf[i+1]) << 8
-
-			v |= uint32(buf[i+2]) << 16
-
-			v |= uint32(buf[i+3]) << 24
-
-			i += 4
-
-		}
-		d.C = math.Float32frombits(v)
 	}
 	{
-		var v uint64
 
-		{
+		v := 0 | (uint64(buf[0+16]) << 0) | (uint64(buf[1+16]) << 8) | (uint64(buf[2+16]) << 16) | (uint64(buf[3+16]) << 24) | (uint64(buf[4+16]) << 32) | (uint64(buf[5+16]) << 40) | (uint64(buf[6+16]) << 48) | (uint64(buf[7+16]) << 56)
+		d.D = *(*float64)(unsafe.Pointer(&v))
 
-			v = 0
-
-			v |= uint64(buf[i+0]) << 0
-
-			v |= uint64(buf[i+1]) << 8
-
-			v |= uint64(buf[i+2]) << 16
-
-			v |= uint64(buf[i+3]) << 24
-
-			v |= uint64(buf[i+4]) << 32
-
-			v |= uint64(buf[i+5]) << 40
-
-			v |= uint64(buf[i+6]) << 48
-
-			v |= uint64(buf[i+7]) << 56
-
-			i += 8
-
-		}
-		d.D = math.Float64frombits(v)
 	}
-	return i, nil
+	return i + 24, nil
 }

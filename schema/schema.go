@@ -1,19 +1,22 @@
 package schema
 
 import (
+	"flag"
 	"fmt"
 	"io"
 )
 
-type Backend struct {
-	Generate func(*Schema) (string, error)
+type Backend interface {
+	Generate(*Schema) (string, error)
+	Flags() *flag.FlagSet
+	GeneratedFilename(string) string
 }
 
 var (
-	Backends = make(map[string]*Backend)
+	Backends = make(map[string]Backend)
 )
 
-func Register(name string, backend *Backend) {
+func Register(name string, backend Backend) {
 	Backends[name] = backend
 }
 
@@ -156,6 +159,9 @@ type StringType struct {
 
 type StructType struct {
 	Struct string
+}
+
+type TimeType struct {
 }
 
 type UnionType struct {

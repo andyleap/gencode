@@ -2,11 +2,11 @@ package main
 
 import (
 	"io"
-	"math"
+	"unsafe"
 )
 
 var (
-	_ = math.Float64frombits
+	_ = unsafe.Sizeof(0)
 	_ = io.ReadFull
 )
 
@@ -33,18 +33,13 @@ func (d *Person) Size() (s uint64) {
 		}
 		s += l
 	}
-	{
-		s += 1
-	}
-	{
-		s += 8
-	}
+	s += 9
 	return
 }
 func (d *Person) Marshal(buf []byte) ([]byte, error) {
 	size := d.Size()
 	{
-		if uint64(cap(buf)) >= d.Size() {
+		if uint64(cap(buf)) >= size {
 			buf = buf[:size]
 		} else {
 			buf = make([]byte, size)
@@ -60,11 +55,11 @@ func (d *Person) Marshal(buf []byte) ([]byte, error) {
 			t := uint64(l)
 
 			for t >= 0x80 {
-				buf[i] = byte(t) | 0x80
+				buf[i+0] = byte(t) | 0x80
 				t >>= 7
 				i++
 			}
-			buf[i] = byte(t)
+			buf[i+0] = byte(t)
 			i++
 
 		}
@@ -73,37 +68,31 @@ func (d *Person) Marshal(buf []byte) ([]byte, error) {
 	}
 	{
 
-		buf[i+0] = byte(d.Age >> 0)
-
-		i += 1
+		buf[i+0+0] = byte(d.Age >> 0)
 
 	}
 	{
-		v := math.Float64bits(d.Height)
 
-		{
+		v := *(*uint64)(unsafe.Pointer(&(d.Height)))
 
-			buf[i+0] = byte(v >> 0)
+		buf[i+0+1] = byte(v >> 0)
 
-			buf[i+1] = byte(v >> 8)
+		buf[i+1+1] = byte(v >> 8)
 
-			buf[i+2] = byte(v >> 16)
+		buf[i+2+1] = byte(v >> 16)
 
-			buf[i+3] = byte(v >> 24)
+		buf[i+3+1] = byte(v >> 24)
 
-			buf[i+4] = byte(v >> 32)
+		buf[i+4+1] = byte(v >> 32)
 
-			buf[i+5] = byte(v >> 40)
+		buf[i+5+1] = byte(v >> 40)
 
-			buf[i+6] = byte(v >> 48)
+		buf[i+6+1] = byte(v >> 48)
 
-			buf[i+7] = byte(v >> 56)
+		buf[i+7+1] = byte(v >> 56)
 
-			i += 8
-
-		}
 	}
-	return buf[:i], nil
+	return buf[:i+9], nil
 }
 
 func (d *Person) Unmarshal(buf []byte) (uint64, error) {
@@ -115,10 +104,10 @@ func (d *Person) Unmarshal(buf []byte) (uint64, error) {
 		{
 
 			bs := uint8(7)
-			t := uint64(buf[i] & 0x7F)
+			t := uint64(buf[i+0] & 0x7F)
 			for buf[i]&0x80 == 0x80 {
 				i++
-				t |= uint64(buf[i]&0x7F) << bs
+				t |= uint64(buf[i+0]&0x7F) << bs
 				bs += 7
 			}
 			i++
@@ -131,42 +120,16 @@ func (d *Person) Unmarshal(buf []byte) (uint64, error) {
 	}
 	{
 
-		d.Age = 0
-
-		d.Age |= uint8(buf[i+0]) << 0
-
-		i += 1
+		d.Age = 0 | (uint8(buf[i+0+0]) << 0)
 
 	}
 	{
-		var v uint64
 
-		{
+		v := 0 | (uint64(buf[i+0+1]) << 0) | (uint64(buf[i+1+1]) << 8) | (uint64(buf[i+2+1]) << 16) | (uint64(buf[i+3+1]) << 24) | (uint64(buf[i+4+1]) << 32) | (uint64(buf[i+5+1]) << 40) | (uint64(buf[i+6+1]) << 48) | (uint64(buf[i+7+1]) << 56)
+		d.Height = *(*float64)(unsafe.Pointer(&v))
 
-			v = 0
-
-			v |= uint64(buf[i+0]) << 0
-
-			v |= uint64(buf[i+1]) << 8
-
-			v |= uint64(buf[i+2]) << 16
-
-			v |= uint64(buf[i+3]) << 24
-
-			v |= uint64(buf[i+4]) << 32
-
-			v |= uint64(buf[i+5]) << 40
-
-			v |= uint64(buf[i+6]) << 48
-
-			v |= uint64(buf[i+7]) << 56
-
-			i += 8
-
-		}
-		d.Height = math.Float64frombits(v)
 	}
-	return i, nil
+	return i + 9, nil
 }
 
 type Group struct {
@@ -209,6 +172,7 @@ func (d *Group) FramedSize() (s uint64, us uint64) {
 			{
 				s += d.Members[k].Size()
 			}
+
 		}
 	}
 	l := s
@@ -234,7 +198,7 @@ func (d *Group) Size() (s uint64) {
 func (d *Group) Marshal(buf []byte) ([]byte, error) {
 	size, usize := d.FramedSize()
 	{
-		if uint64(cap(buf)) >= d.Size() {
+		if uint64(cap(buf)) >= size {
 			buf = buf[:size]
 		} else {
 			buf = make([]byte, size)
@@ -247,11 +211,11 @@ func (d *Group) Marshal(buf []byte) ([]byte, error) {
 		t := uint64(usize)
 
 		for t >= 0x80 {
-			buf[i] = byte(t) | 0x80
+			buf[i+0] = byte(t) | 0x80
 			t >>= 7
 			i++
 		}
-		buf[i] = byte(t)
+		buf[i+0] = byte(t)
 		i++
 
 	}
@@ -263,11 +227,11 @@ func (d *Group) Marshal(buf []byte) ([]byte, error) {
 			t := uint64(l)
 
 			for t >= 0x80 {
-				buf[i] = byte(t) | 0x80
+				buf[i+0] = byte(t) | 0x80
 				t >>= 7
 				i++
 			}
-			buf[i] = byte(t)
+			buf[i+0] = byte(t)
 			i++
 
 		}
@@ -282,26 +246,27 @@ func (d *Group) Marshal(buf []byte) ([]byte, error) {
 			t := uint64(l)
 
 			for t >= 0x80 {
-				buf[i] = byte(t) | 0x80
+				buf[i+0] = byte(t) | 0x80
 				t >>= 7
 				i++
 			}
-			buf[i] = byte(t)
+			buf[i+0] = byte(t)
 			i++
 
 		}
 		for k := range d.Members {
 
 			{
-				nbuf, err := d.Members[k].Marshal(buf[i:])
+				nbuf, err := d.Members[k].Marshal(buf[i+0:])
 				if err != nil {
 					return nil, err
 				}
 				i += uint64(len(nbuf))
 			}
+
 		}
 	}
-	return buf[:i], nil
+	return buf[:i+0], nil
 }
 
 func (d *Group) Unmarshal(buf []byte) (uint64, error) {
@@ -311,10 +276,10 @@ func (d *Group) Unmarshal(buf []byte) (uint64, error) {
 	{
 
 		bs := uint8(7)
-		t := uint64(buf[i] & 0x7F)
+		t := uint64(buf[i+0] & 0x7F)
 		for buf[i]&0x80 == 0x80 {
 			i++
-			t |= uint64(buf[i]&0x7F) << bs
+			t |= uint64(buf[i+0]&0x7F) << bs
 			bs += 7
 		}
 		i++
@@ -331,10 +296,10 @@ func (d *Group) Unmarshal(buf []byte) (uint64, error) {
 		{
 
 			bs := uint8(7)
-			t := uint64(buf[i] & 0x7F)
+			t := uint64(buf[i+0] & 0x7F)
 			for buf[i]&0x80 == 0x80 {
 				i++
-				t |= uint64(buf[i]&0x7F) << bs
+				t |= uint64(buf[i+0]&0x7F) << bs
 				bs += 7
 			}
 			i++
@@ -351,10 +316,10 @@ func (d *Group) Unmarshal(buf []byte) (uint64, error) {
 		{
 
 			bs := uint8(7)
-			t := uint64(buf[i] & 0x7F)
+			t := uint64(buf[i+0] & 0x7F)
 			for buf[i]&0x80 == 0x80 {
 				i++
-				t |= uint64(buf[i]&0x7F) << bs
+				t |= uint64(buf[i+0]&0x7F) << bs
 				bs += 7
 			}
 			i++
@@ -370,15 +335,16 @@ func (d *Group) Unmarshal(buf []byte) (uint64, error) {
 		for k := range d.Members {
 
 			{
-				ni, err := d.Members[k].Unmarshal(buf[i:])
+				ni, err := d.Members[k].Unmarshal(buf[i+0:])
 				if err != nil {
 					return 0, err
 				}
 				i += ni
 			}
+
 		}
 	}
-	return i, nil
+	return i + 0, nil
 }
 
 func (d *Group) Serialize(w io.Writer) error {
@@ -454,9 +420,6 @@ func (d *A) Size() (s uint64) {
 		s += l
 	}
 	{
-		s += 8
-	}
-	{
 		l := uint64(len(d.Phone))
 
 		{
@@ -471,21 +434,13 @@ func (d *A) Size() (s uint64) {
 		}
 		s += l
 	}
-	{
-		s += 8
-	}
-	{
-		s += 1
-	}
-	{
-		s += 8
-	}
+	s += 25
 	return
 }
 func (d *A) Marshal(buf []byte) ([]byte, error) {
 	size := d.Size()
 	{
-		if uint64(cap(buf)) >= d.Size() {
+		if uint64(cap(buf)) >= size {
 			buf = buf[:size]
 		} else {
 			buf = make([]byte, size)
@@ -501,11 +456,11 @@ func (d *A) Marshal(buf []byte) ([]byte, error) {
 			t := uint64(l)
 
 			for t >= 0x80 {
-				buf[i] = byte(t) | 0x80
+				buf[i+0] = byte(t) | 0x80
 				t >>= 7
 				i++
 			}
-			buf[i] = byte(t)
+			buf[i+0] = byte(t)
 			i++
 
 		}
@@ -514,23 +469,21 @@ func (d *A) Marshal(buf []byte) ([]byte, error) {
 	}
 	{
 
-		buf[i+0] = byte(d.BirthDay >> 0)
+		buf[i+0+0] = byte(d.BirthDay >> 0)
 
-		buf[i+1] = byte(d.BirthDay >> 8)
+		buf[i+1+0] = byte(d.BirthDay >> 8)
 
-		buf[i+2] = byte(d.BirthDay >> 16)
+		buf[i+2+0] = byte(d.BirthDay >> 16)
 
-		buf[i+3] = byte(d.BirthDay >> 24)
+		buf[i+3+0] = byte(d.BirthDay >> 24)
 
-		buf[i+4] = byte(d.BirthDay >> 32)
+		buf[i+4+0] = byte(d.BirthDay >> 32)
 
-		buf[i+5] = byte(d.BirthDay >> 40)
+		buf[i+5+0] = byte(d.BirthDay >> 40)
 
-		buf[i+6] = byte(d.BirthDay >> 48)
+		buf[i+6+0] = byte(d.BirthDay >> 48)
 
-		buf[i+7] = byte(d.BirthDay >> 56)
-
-		i += 8
+		buf[i+7+0] = byte(d.BirthDay >> 56)
 
 	}
 	{
@@ -541,11 +494,11 @@ func (d *A) Marshal(buf []byte) ([]byte, error) {
 			t := uint64(l)
 
 			for t >= 0x80 {
-				buf[i] = byte(t) | 0x80
+				buf[i+8] = byte(t) | 0x80
 				t >>= 7
 				i++
 			}
-			buf[i] = byte(t)
+			buf[i+8] = byte(t)
 			i++
 
 		}
@@ -554,58 +507,50 @@ func (d *A) Marshal(buf []byte) ([]byte, error) {
 	}
 	{
 
-		buf[i+0] = byte(d.Siblings >> 0)
+		buf[i+0+8] = byte(d.Siblings >> 0)
 
-		buf[i+1] = byte(d.Siblings >> 8)
+		buf[i+1+8] = byte(d.Siblings >> 8)
 
-		buf[i+2] = byte(d.Siblings >> 16)
+		buf[i+2+8] = byte(d.Siblings >> 16)
 
-		buf[i+3] = byte(d.Siblings >> 24)
+		buf[i+3+8] = byte(d.Siblings >> 24)
 
-		buf[i+4] = byte(d.Siblings >> 32)
+		buf[i+4+8] = byte(d.Siblings >> 32)
 
-		buf[i+5] = byte(d.Siblings >> 40)
+		buf[i+5+8] = byte(d.Siblings >> 40)
 
-		buf[i+6] = byte(d.Siblings >> 48)
+		buf[i+6+8] = byte(d.Siblings >> 48)
 
-		buf[i+7] = byte(d.Siblings >> 56)
-
-		i += 8
+		buf[i+7+8] = byte(d.Siblings >> 56)
 
 	}
 	{
 
-		buf[i+0] = byte(d.Spouse >> 0)
-
-		i += 1
+		buf[i+0+16] = byte(d.Spouse >> 0)
 
 	}
 	{
-		v := math.Float64bits(d.Money)
 
-		{
+		v := *(*uint64)(unsafe.Pointer(&(d.Money)))
 
-			buf[i+0] = byte(v >> 0)
+		buf[i+0+17] = byte(v >> 0)
 
-			buf[i+1] = byte(v >> 8)
+		buf[i+1+17] = byte(v >> 8)
 
-			buf[i+2] = byte(v >> 16)
+		buf[i+2+17] = byte(v >> 16)
 
-			buf[i+3] = byte(v >> 24)
+		buf[i+3+17] = byte(v >> 24)
 
-			buf[i+4] = byte(v >> 32)
+		buf[i+4+17] = byte(v >> 32)
 
-			buf[i+5] = byte(v >> 40)
+		buf[i+5+17] = byte(v >> 40)
 
-			buf[i+6] = byte(v >> 48)
+		buf[i+6+17] = byte(v >> 48)
 
-			buf[i+7] = byte(v >> 56)
+		buf[i+7+17] = byte(v >> 56)
 
-			i += 8
-
-		}
 	}
-	return buf[:i], nil
+	return buf[:i+25], nil
 }
 
 func (d *A) Unmarshal(buf []byte) (uint64, error) {
@@ -617,10 +562,10 @@ func (d *A) Unmarshal(buf []byte) (uint64, error) {
 		{
 
 			bs := uint8(7)
-			t := uint64(buf[i] & 0x7F)
+			t := uint64(buf[i+0] & 0x7F)
 			for buf[i]&0x80 == 0x80 {
 				i++
-				t |= uint64(buf[i]&0x7F) << bs
+				t |= uint64(buf[i+0]&0x7F) << bs
 				bs += 7
 			}
 			i++
@@ -633,25 +578,7 @@ func (d *A) Unmarshal(buf []byte) (uint64, error) {
 	}
 	{
 
-		d.BirthDay = 0
-
-		d.BirthDay |= int64(buf[i+0]) << 0
-
-		d.BirthDay |= int64(buf[i+1]) << 8
-
-		d.BirthDay |= int64(buf[i+2]) << 16
-
-		d.BirthDay |= int64(buf[i+3]) << 24
-
-		d.BirthDay |= int64(buf[i+4]) << 32
-
-		d.BirthDay |= int64(buf[i+5]) << 40
-
-		d.BirthDay |= int64(buf[i+6]) << 48
-
-		d.BirthDay |= int64(buf[i+7]) << 56
-
-		i += 8
+		d.BirthDay = 0 | (int64(buf[i+0+0]) << 0) | (int64(buf[i+1+0]) << 8) | (int64(buf[i+2+0]) << 16) | (int64(buf[i+3+0]) << 24) | (int64(buf[i+4+0]) << 32) | (int64(buf[i+5+0]) << 40) | (int64(buf[i+6+0]) << 48) | (int64(buf[i+7+0]) << 56)
 
 	}
 	{
@@ -660,10 +587,10 @@ func (d *A) Unmarshal(buf []byte) (uint64, error) {
 		{
 
 			bs := uint8(7)
-			t := uint64(buf[i] & 0x7F)
+			t := uint64(buf[i+8] & 0x7F)
 			for buf[i]&0x80 == 0x80 {
 				i++
-				t |= uint64(buf[i]&0x7F) << bs
+				t |= uint64(buf[i+8]&0x7F) << bs
 				bs += 7
 			}
 			i++
@@ -676,63 +603,19 @@ func (d *A) Unmarshal(buf []byte) (uint64, error) {
 	}
 	{
 
-		d.Siblings = 0
-
-		d.Siblings |= int64(buf[i+0]) << 0
-
-		d.Siblings |= int64(buf[i+1]) << 8
-
-		d.Siblings |= int64(buf[i+2]) << 16
-
-		d.Siblings |= int64(buf[i+3]) << 24
-
-		d.Siblings |= int64(buf[i+4]) << 32
-
-		d.Siblings |= int64(buf[i+5]) << 40
-
-		d.Siblings |= int64(buf[i+6]) << 48
-
-		d.Siblings |= int64(buf[i+7]) << 56
-
-		i += 8
+		d.Siblings = 0 | (int64(buf[i+0+8]) << 0) | (int64(buf[i+1+8]) << 8) | (int64(buf[i+2+8]) << 16) | (int64(buf[i+3+8]) << 24) | (int64(buf[i+4+8]) << 32) | (int64(buf[i+5+8]) << 40) | (int64(buf[i+6+8]) << 48) | (int64(buf[i+7+8]) << 56)
 
 	}
 	{
 
-		d.Spouse = 0
-
-		d.Spouse |= uint8(buf[i+0]) << 0
-
-		i += 1
+		d.Spouse = 0 | (uint8(buf[i+0+16]) << 0)
 
 	}
 	{
-		var v uint64
 
-		{
+		v := 0 | (uint64(buf[i+0+17]) << 0) | (uint64(buf[i+1+17]) << 8) | (uint64(buf[i+2+17]) << 16) | (uint64(buf[i+3+17]) << 24) | (uint64(buf[i+4+17]) << 32) | (uint64(buf[i+5+17]) << 40) | (uint64(buf[i+6+17]) << 48) | (uint64(buf[i+7+17]) << 56)
+		d.Money = *(*float64)(unsafe.Pointer(&v))
 
-			v = 0
-
-			v |= uint64(buf[i+0]) << 0
-
-			v |= uint64(buf[i+1]) << 8
-
-			v |= uint64(buf[i+2]) << 16
-
-			v |= uint64(buf[i+3]) << 24
-
-			v |= uint64(buf[i+4]) << 32
-
-			v |= uint64(buf[i+5]) << 40
-
-			v |= uint64(buf[i+6]) << 48
-
-			v |= uint64(buf[i+7]) << 56
-
-			i += 8
-
-		}
-		d.Money = math.Float64frombits(v)
 	}
-	return i, nil
+	return i + 25, nil
 }

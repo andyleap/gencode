@@ -6,22 +6,31 @@ import (
 	"github.com/andyleap/gencode/schema"
 )
 
-func WalkSchema(s *schema.Schema) (parts *StringBuilder, err error) {
+type Walker struct {
+	Needs     []string
+	Offset    int
+	IAdjusted bool
+	Unsafe    bool
+}
+
+func (w *Walker) WalkSchema(s *schema.Schema, Package string) (parts *StringBuilder, err error) {
 	parts = &StringBuilder{}
-	parts.Append(fmt.Sprintf(`package main
+	parts.Append(fmt.Sprintf(`package %s
 	
 	import (
-		"math"
+		"unsafe"
 		"io"
+		"time"
 	)
 	
 	var (
-		_ = math.Float64frombits
+		_ = unsafe.Sizeof(0)
 		_ = io.ReadFull
+		_ = time.Now()
 	)
-	`))
+	`, Package))
 	for _, st := range s.Structs {
-		p, err := WalkStruct(st)
+		p, err := w.WalkStruct(st)
 		if err != nil {
 			return nil, err
 		}

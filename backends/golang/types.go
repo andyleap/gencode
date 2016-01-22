@@ -6,114 +6,122 @@ import (
 	"github.com/andyleap/gencode/schema"
 )
 
-func WalkTypeDef(t schema.Type) (*StringBuilder, error) {
+func (w *Walker) WalkTypeDef(t schema.Type) (*StringBuilder, error) {
 	switch tt := t.(type) {
 	case *schema.ArrayType:
-		return WalkArrayDef(tt)
+		return w.WalkArrayDef(tt)
 	case *schema.BoolType:
-		return WalkBoolDef(tt)
+		return w.WalkBoolDef(tt)
 	case *schema.ByteType:
-		return WalkByteDef(tt)
+		return w.WalkByteDef(tt)
 	case *schema.DeferType:
-		return WalkDeferDef(tt)
+		return w.WalkDeferDef(tt)
 	case *schema.FloatType:
-		return WalkFloatDef(tt)
+		return w.WalkFloatDef(tt)
 	case *schema.IntType:
-		return WalkIntDef(tt)
+		return w.WalkIntDef(tt)
 	case *schema.PointerType:
-		return WalkPointerDef(tt)
+		return w.WalkPointerDef(tt)
 	case *schema.SliceType:
-		return WalkSliceDef(tt)
+		return w.WalkSliceDef(tt)
 	case *schema.StringType:
-		return WalkStringDef(tt)
+		return w.WalkStringDef(tt)
 	case *schema.StructType:
-		return WalkStructDef(tt)
+		return w.WalkStructDef(tt)
+	case *schema.TimeType:
+		return w.WalkTimeDef(tt)
 	case *schema.UnionType:
-		return WalkUnionDef(tt)
+		return w.WalkUnionDef(tt)
 	}
 	return nil, fmt.Errorf("No such type %T", t)
 }
 
-func WalkTypeSize(t schema.Type, target string) (*StringBuilder, error) {
+func (w *Walker) WalkTypeSize(t schema.Type, target string) (*StringBuilder, error) {
 	switch tt := t.(type) {
 	case *schema.ArrayType:
-		return WalkArraySize(tt, target)
+		return w.WalkArraySize(tt, target)
 	case *schema.BoolType:
-		return WalkBoolSize(tt, target)
+		return w.WalkBoolSize(tt, target)
 	case *schema.ByteType:
-		return WalkByteSize(tt, target)
+		return w.WalkByteSize(tt, target)
 	case *schema.DeferType:
-		return WalkDeferSize(tt, target)
+		return w.WalkDeferSize(tt, target)
 	case *schema.FloatType:
-		return WalkFloatSize(tt, target)
+		return w.WalkFloatSize(tt, target)
 	case *schema.IntType:
-		return WalkIntSize(tt, target)
+		return w.WalkIntSize(tt, target)
 	case *schema.PointerType:
-		return WalkPointerSize(tt, target)
+		return w.WalkPointerSize(tt, target)
 	case *schema.SliceType:
-		return WalkSliceSize(tt, target)
+		return w.WalkSliceSize(tt, target)
 	case *schema.StringType:
-		return WalkStringSize(tt, target)
+		return w.WalkStringSize(tt, target)
 	case *schema.StructType:
-		return WalkStructSize(tt, target)
+		return w.WalkStructSize(tt, target)
+	case *schema.TimeType:
+		return w.WalkTimeSize(tt, target)
 	case *schema.UnionType:
-		return WalkUnionSize(tt, target)
+		return w.WalkUnionSize(tt, target)
 	}
 	return nil, fmt.Errorf("No such type %T", t)
 }
 
-func WalkTypeMarshal(t schema.Type, target string) (*StringBuilder, error) {
+func (w *Walker) WalkTypeMarshal(t schema.Type, target string) (*StringBuilder, error) {
 	switch tt := t.(type) {
 	case *schema.ArrayType:
-		return WalkArrayMarshal(tt, target)
+		return w.WalkArrayMarshal(tt, target)
 	case *schema.BoolType:
-		return WalkBoolMarshal(tt, target)
+		return w.WalkBoolMarshal(tt, target)
 	case *schema.ByteType:
-		return WalkByteMarshal(tt, target)
+		return w.WalkByteMarshal(tt, target)
 	case *schema.DeferType:
-		return WalkDeferMarshal(tt, target)
+		return w.WalkDeferMarshal(tt, target)
 	case *schema.FloatType:
-		return WalkFloatMarshal(tt, target)
+		return w.WalkFloatMarshal(tt, target)
 	case *schema.IntType:
-		return WalkIntMarshal(tt, target)
+		return w.WalkIntMarshal(tt, target)
 	case *schema.PointerType:
-		return WalkPointerMarshal(tt, target)
+		return w.WalkPointerMarshal(tt, target)
 	case *schema.SliceType:
-		return WalkSliceMarshal(tt, target)
+		return w.WalkSliceMarshal(tt, target)
 	case *schema.StringType:
-		return WalkStringMarshal(tt, target)
+		return w.WalkStringMarshal(tt, target)
 	case *schema.StructType:
-		return WalkStructMarshal(tt, target)
+		return w.WalkStructMarshal(tt, target)
+	case *schema.TimeType:
+		return w.WalkTimeMarshal(tt, target)
 	case *schema.UnionType:
-		return WalkUnionMarshal(tt, target)
+		return w.WalkUnionMarshal(tt, target)
 	}
 	return nil, fmt.Errorf("No such type %T", t)
 }
 
-func WalkTypeUnmarshal(t schema.Type, target string) (*StringBuilder, error) {
+func (w *Walker) WalkTypeUnmarshal(t schema.Type, target string) (*StringBuilder, error) {
 	switch tt := t.(type) {
 	case *schema.ArrayType:
-		return WalkArrayUnmarshal(tt, target)
+		return w.WalkArrayUnmarshal(tt, target)
 	case *schema.BoolType:
-		return WalkBoolUnmarshal(tt, target)
+		return w.WalkBoolUnmarshal(tt, target)
 	case *schema.ByteType:
-		return WalkByteUnmarshal(tt, target)
+		return w.WalkByteUnmarshal(tt, target)
 	case *schema.DeferType:
-		return WalkDeferUnmarshal(tt, target)
+		return w.WalkDeferUnmarshal(tt, target)
 	case *schema.FloatType:
-		return WalkFloatUnmarshal(tt, target)
+		return w.WalkFloatUnmarshal(tt, target)
 	case *schema.IntType:
-		return WalkIntUnmarshal(tt, target)
+		return w.WalkIntUnmarshal(tt, target)
 	case *schema.PointerType:
-		return WalkPointerUnmarshal(tt, target)
+		return w.WalkPointerUnmarshal(tt, target)
 	case *schema.SliceType:
-		return WalkSliceUnmarshal(tt, target)
+		return w.WalkSliceUnmarshal(tt, target)
 	case *schema.StringType:
-		return WalkStringUnmarshal(tt, target)
+		return w.WalkStringUnmarshal(tt, target)
 	case *schema.StructType:
-		return WalkStructUnmarshal(tt, target)
+		return w.WalkStructUnmarshal(tt, target)
+	case *schema.TimeType:
+		return w.WalkTimeUnmarshal(tt, target)
 	case *schema.UnionType:
-		return WalkUnionUnmarshal(tt, target)
+		return w.WalkUnionUnmarshal(tt, target)
 	}
 	return nil, fmt.Errorf("No such type %T", t)
 }

@@ -15,7 +15,7 @@ func init() {
 
 	template.Must(StructTemps.New("marshal").Parse(`
 	{
-		nbuf, err := {{.Target}}.Marshal(buf[i:])
+		nbuf, err := {{.Target}}.Marshal(buf[{{if .W.IAdjusted}}i + {{end}}{{.W.Offset}}:])
 		if err != nil {
 			return nil, err
 		}
@@ -23,7 +23,7 @@ func init() {
 	}`))
 	template.Must(StructTemps.New("unmarshal").Parse(`
 	{
-		ni, err := {{.Target}}.Unmarshal(buf[i:])
+		ni, err := {{.Target}}.Unmarshal(buf[{{if .W.IAdjusted}}i + {{end}}{{.W.Offset}}:])
 		if err != nil {
 			return 0, err
 		}
@@ -38,29 +38,33 @@ func init() {
 
 type StructTemp struct {
 	*schema.StructType
+	W      *Walker
 	Target string
 }
 
-func WalkStructDef(st *schema.StructType) (parts *StringBuilder, err error) {
+func (w *Walker) WalkStructDef(st *schema.StructType) (parts *StringBuilder, err error) {
 	parts = &StringBuilder{}
 	err = parts.AddTemplate(StructTemps, "field", st)
 	return
 }
 
-func WalkStructSize(st *schema.StructType, target string) (parts *StringBuilder, err error) {
+func (w *Walker) WalkStructSize(st *schema.StructType, target string) (parts *StringBuilder, err error) {
 	parts = &StringBuilder{}
-	err = parts.AddTemplate(StructTemps, "size", StructTemp{st, target})
+	err = parts.AddTemplate(StructTemps, "size", StructTemp{st, w, target})
+	w.IAdjusted = true
 	return
 }
 
-func WalkStructMarshal(st *schema.StructType, target string) (parts *StringBuilder, err error) {
+func (w *Walker) WalkStructMarshal(st *schema.StructType, target string) (parts *StringBuilder, err error) {
 	parts = &StringBuilder{}
-	err = parts.AddTemplate(StructTemps, "marshal", StructTemp{st, target})
+	err = parts.AddTemplate(StructTemps, "marshal", StructTemp{st, w, target})
+	w.IAdjusted = true
 	return
 }
 
-func WalkStructUnmarshal(st *schema.StructType, target string) (parts *StringBuilder, err error) {
+func (w *Walker) WalkStructUnmarshal(st *schema.StructType, target string) (parts *StringBuilder, err error) {
 	parts = &StringBuilder{}
-	err = parts.AddTemplate(StructTemps, "unmarshal", StructTemp{st, target})
+	err = parts.AddTemplate(StructTemps, "unmarshal", StructTemp{st, w, target})
+	w.IAdjusted = true
 	return
 }

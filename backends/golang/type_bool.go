@@ -16,45 +16,45 @@ func init() {
 	template.Must(BoolTemps.New("marshal").Parse(`
 	{
 		if {{.Target}} {
-			buf[i] = 1
+			buf[{{if .W.IAdjusted}}i + {{end}}{{.W.Offset}}] = 1
 		} else {
-			buf[i] = 0
+			buf[{{if .W.IAdjusted}}i + {{end}}{{.W.Offset}}] = 0
 		}
-		i++
 	}`))
 	template.Must(BoolTemps.New("unmarshal").Parse(`
 	{
-		{{.Target}} = buf[i] == 1
-		i++
+		{{.Target}} = buf[{{if .W.IAdjusted}}i + {{end}}{{.W.Offset}}] == 1
 	}`))
 }
 
 type BoolTemp struct {
 	*schema.BoolType
+	W      *Walker
 	Target string
 }
 
-func WalkBoolDef(bt *schema.BoolType) (parts *StringBuilder, err error) {
+func (w *Walker) WalkBoolDef(bt *schema.BoolType) (parts *StringBuilder, err error) {
 	parts = &StringBuilder{}
 	parts.Append("bool")
 	return
 }
 
-func WalkBoolSize(bt *schema.BoolType, target string) (parts *StringBuilder, err error) {
+func (w *Walker) WalkBoolSize(bt *schema.BoolType, target string) (parts *StringBuilder, err error) {
 	parts = &StringBuilder{}
-	parts.Append(`
-	s += 1`)
+	w.Offset++
 	return
 }
 
-func WalkBoolMarshal(bt *schema.BoolType, target string) (parts *StringBuilder, err error) {
+func (w *Walker) WalkBoolMarshal(bt *schema.BoolType, target string) (parts *StringBuilder, err error) {
 	parts = &StringBuilder{}
-	err = parts.AddTemplate(BoolTemps, "marshal", BoolTemp{bt, target})
+	err = parts.AddTemplate(BoolTemps, "marshal", BoolTemp{bt, w, target})
+	w.Offset++
 	return
 }
 
-func WalkBoolUnmarshal(bt *schema.BoolType, target string) (parts *StringBuilder, err error) {
+func (w *Walker) WalkBoolUnmarshal(bt *schema.BoolType, target string) (parts *StringBuilder, err error) {
 	parts = &StringBuilder{}
-	err = parts.AddTemplate(BoolTemps, "unmarshal", BoolTemp{bt, target})
+	err = parts.AddTemplate(BoolTemps, "unmarshal", BoolTemp{bt, w, target})
+	w.Offset++
 	return
 }

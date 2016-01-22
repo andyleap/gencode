@@ -6,7 +6,7 @@ import (
 	"github.com/andyleap/gencode/schema"
 )
 
-func WalkStruct(s *schema.Struct) (parts *StringBuilder, err error) {
+func (w *Walker) WalkStruct(s *schema.Struct) (parts *StringBuilder, err error) {
 	parts = &StringBuilder{}
 	intHandler := &schema.IntType{
 		Bits:   64,
@@ -16,7 +16,7 @@ func WalkStruct(s *schema.Struct) (parts *StringBuilder, err error) {
 	parts.Append(fmt.Sprintf(`type %s struct {
 	`, s.Name))
 	for _, f := range s.Fields {
-		p, err := WalkFieldDef(f)
+		p, err := w.WalkFieldDef(f)
 		if err != nil {
 			return nil, err
 		}
@@ -36,14 +36,19 @@ func (d *%s) FramedSize() (s uint64, us uint64) {
 	`, s.Name))
 	}
 	for _, f := range s.Fields {
-		p, err := WalkFieldSize(f)
+		p, err := w.WalkFieldSize(f)
 		if err != nil {
 			return nil, err
 		}
 		parts.Join(p)
 	}
+	if w.Offset > 0 {
+		parts.Append(fmt.Sprintf(`
+	s += %d`, w.Offset))
+		w.Offset = 0
+	}
 	if s.Framed {
-		intcode, err := WalkIntSize(intHandler, "l")
+		intcode, err := w.WalkIntSize(intHandler, "l")
 		if err != nil {
 			return nil, err
 		}
@@ -77,7 +82,7 @@ func (d *%s) Marshal(buf []byte) ([]byte, error) {`, s.Name))
 	}
 	parts.Append(`
 	{
-		if uint64(cap(buf)) >= d.Size() {
+		if uint64(cap(buf)) >= size {
 			buf = buf[:size]
 		} else {
 			buf = make([]byte, size)
@@ -86,30 +91,31 @@ func (d *%s) Marshal(buf []byte) ([]byte, error) {`, s.Name))
 	i := uint64(0)
 	`)
 	if s.Framed {
-		intcode, err := WalkIntMarshal(intHandler, "usize")
+		intcode, err := w.WalkIntMarshal(intHandler, "usize")
 		if err != nil {
 			return nil, err
 		}
 		parts.Join(intcode)
 	}
 	for _, f := range s.Fields {
-		p, err := WalkFieldMarshal(f)
+		p, err := w.WalkFieldMarshal(f)
 		if err != nil {
 			return nil, err
 		}
 		parts.Join(p)
 	}
 	parts.Append(fmt.Sprintf(`
-	return buf[:i], nil
+	return buf[:i+%d], nil
 }
 	
 func (d *%s) Unmarshal(buf []byte) (uint64, error) {
 	i := uint64(0)
-	`, s.Name))
+	`, w.Offset, s.Name))
+	w.Offset = 0
 	if s.Framed {
 		parts.Append(`usize := uint64(0)
 	`)
-		intcode, err := WalkIntUnmarshal(intHandler, "usize")
+		intcode, err := w.WalkIntUnmarshal(intHandler, "usize")
 		if err != nil {
 			return nil, err
 		}
@@ -120,16 +126,17 @@ func (d *%s) Unmarshal(buf []byte) (uint64, error) {
 	}`)
 	}
 	for _, f := range s.Fields {
-		p, err := WalkFieldUnmarshal(f)
+		p, err := w.WalkFieldUnmarshal(f)
 		if err != nil {
 			return nil, err
 		}
 		parts.Join(p)
 	}
-	parts.Append(`
-	return i, nil
+	parts.Append(fmt.Sprintf(`
+	return i + %d, nil
 }
-`)
+`, w.Offset))
+	w.Offset = 0
 	if s.Framed {
 		parts.Append(fmt.Sprintf(`
 func (d *%s) Serialize(w io.Writer) (error) {
@@ -183,10 +190,10 @@ func (d *%s) Deserialize(r io.Reader) (error) {
 	return
 }
 
-func WalkFieldDef(s *schema.Field) (parts *StringBuilder, err error) {
+func (w *Walker) WalkFieldDef(s *schema.Field) (parts *StringBuilder, err error) {
 	parts = &StringBuilder{}
 	parts.Append(fmt.Sprintf(`%s `, s.Name))
-	subp, err := WalkTypeDef(s.Type)
+	subp, err := w.WalkTypeDef(s.Type)
 	if err != nil {
 		return nil, err
 	}
@@ -194,14 +201,14 @@ func WalkFieldDef(s *schema.Field) (parts *StringBuilder, err error) {
 	return
 }
 
-func WalkFieldSize(s *schema.Field) (parts *StringBuilder, err error) {
-	return WalkTypeSize(s.Type, "d."+s.Name)
+func (w *Walker) WalkFieldSize(s *schema.Field) (parts *StringBuilder, err error) {
+	return w.WalkTypeSize(s.Type, "d."+s.Name)
 }
 
-func WalkFieldMarshal(s *schema.Field) (parts *StringBuilder, err error) {
-	return WalkTypeMarshal(s.Type, "d."+s.Name)
+func (w *Walker) WalkFieldMarshal(s *schema.Field) (parts *StringBuilder, err error) {
+	return w.WalkTypeMarshal(s.Type, "d."+s.Name)
 }
 
-func WalkFieldUnmarshal(s *schema.Field) (parts *StringBuilder, err error) {
-	return WalkTypeUnmarshal(s.Type, "d."+s.Name)
+func (w *Walker) WalkFieldUnmarshal(s *schema.Field) (parts *StringBuilder, err error) {
+	return w.WalkTypeUnmarshal(s.Type, "d."+s.Name)
 }

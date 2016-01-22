@@ -94,9 +94,10 @@ func BenchmarkFixedGencodeSerialize(b *testing.B) {
 		C: 6.7,
 		D: 12.65,
 	}
+	buf, _ := p.Marshal(nil)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		p.Marshal(nil)
+		p.Marshal(buf)
 	}
 }
 

@@ -15,31 +15,30 @@ func init() {
 	template.Must(PointerTemps.New("marshal").Parse(`
 	{
 		if {{.Target}} == nil {
-			buf[i] = 0
-			i++
+			buf[{{if .W.IAdjusted}}i + {{end}}{{.Offset}}] = 0
 		} else {
-			buf[i] = 1
-			i++
+			buf[{{if .W.IAdjusted}}i + {{end}}{{.Offset}}] = 1
 			{{.SubTypeCode}}
+			i += {{.SubOffset}}
 		}
 	}`))
 	template.Must(PointerTemps.New("unmarshal").Parse(`
 	{
-		if buf[i] == 1 {
+		if buf[{{if .W.IAdjusted}}i + {{end}}{{.Offset}}] == 1 {
 			if {{.Target}} == nil {
 				{{.Target}} = new({{.SubField}})
 			}
-			i++
 			{{.SubTypeCode}}
+			i += {{.SubOffset}}
 		} else {
 			{{.Target}} = nil
 		}
 	}`))
 	template.Must(PointerTemps.New("size").Parse(`
 	{
-		s++
 		if {{.Target}} != nil {
 			{{.SubTypeCode}}
+			s += {{.SubOffset}}
 		}
 	}`))
 
@@ -48,15 +47,17 @@ func init() {
 
 type PointerTemp struct {
 	*schema.PointerType
+	W           *Walker
+	SubOffset   int
 	Target      string
 	SubTypeCode string
 	SubField    string
 }
 
-func WalkPointerDef(pt *schema.PointerType) (parts *StringBuilder, err error) {
+func (w *Walker) WalkPointerDef(pt *schema.PointerType) (parts *StringBuilder, err error) {
 	parts = &StringBuilder{}
 	parts.Append("*")
-	sub, err := WalkTypeDef(pt.SubType)
+	sub, err := w.WalkTypeDef(pt.SubType)
 	if err != nil {
 		return nil, err
 	}
@@ -64,40 +65,58 @@ func WalkPointerDef(pt *schema.PointerType) (parts *StringBuilder, err error) {
 	return
 }
 
-func WalkPointerSize(pt *schema.PointerType, target string) (parts *StringBuilder, err error) {
+func (w *Walker) WalkPointerSize(pt *schema.PointerType, target string) (parts *StringBuilder, err error) {
 	parts = &StringBuilder{}
-	subtypecode, err := WalkTypeSize(pt.SubType, "(*"+target+")")
+	Offset := w.Offset
+	w.Offset++
+	subtypecode, err := w.WalkTypeSize(pt.SubType, "(*"+target+")")
 	if err != nil {
 		return nil, err
 	}
-	err = parts.AddTemplate(PointerTemps, "size", PointerTemp{pt, target, subtypecode.String(), ""})
+	SubOffset := w.Offset - (Offset + 1)
+	w.Offset = Offset
+	err = parts.AddTemplate(PointerTemps, "size", PointerTemp{pt, w, SubOffset, target, subtypecode.String(), ""})
+	w.Offset++
+	w.IAdjusted = true
 	return
 }
 
-func WalkPointerMarshal(pt *schema.PointerType, target string) (parts *StringBuilder, err error) {
+func (w *Walker) WalkPointerMarshal(pt *schema.PointerType, target string) (parts *StringBuilder, err error) {
 	parts = &StringBuilder{}
-	subtypecode, err := WalkTypeMarshal(pt.SubType, "(*"+target+")")
+	Offset := w.Offset
+	w.Offset++
+	subtypecode, err := w.WalkTypeMarshal(pt.SubType, "(*"+target+")")
 	if err != nil {
 		return nil, err
 	}
-	subfield, err := WalkTypeDef(pt.SubType)
+	subfield, err := w.WalkTypeDef(pt.SubType)
 	if err != nil {
 		return nil, err
 	}
-	err = parts.AddTemplate(PointerTemps, "marshal", PointerTemp{pt, target, subtypecode.String(), subfield.String()})
+	SubOffset := w.Offset - (Offset + 1)
+	w.Offset = Offset
+	err = parts.AddTemplate(PointerTemps, "marshal", PointerTemp{pt, w, SubOffset, target, subtypecode.String(), subfield.String()})
+	w.IAdjusted = true
+	w.Offset++
 	return
 }
 
-func WalkPointerUnmarshal(pt *schema.PointerType, target string) (parts *StringBuilder, err error) {
+func (w *Walker) WalkPointerUnmarshal(pt *schema.PointerType, target string) (parts *StringBuilder, err error) {
 	parts = &StringBuilder{}
-	subtypecode, err := WalkTypeUnmarshal(pt.SubType, "(*"+target+")")
+	Offset := w.Offset
+	w.Offset++
+	subtypecode, err := w.WalkTypeUnmarshal(pt.SubType, "(*"+target+")")
 	if err != nil {
 		return nil, err
 	}
-	subfield, err := WalkTypeDef(pt.SubType)
+	subfield, err := w.WalkTypeDef(pt.SubType)
 	if err != nil {
 		return nil, err
 	}
-	err = parts.AddTemplate(PointerTemps, "unmarshal", PointerTemp{pt, target, subtypecode.String(), subfield.String()})
+	SubOffset := w.Offset - (Offset + 1)
+	w.Offset = Offset
+	err = parts.AddTemplate(PointerTemps, "unmarshal", PointerTemp{pt, w, SubOffset, target, subtypecode.String(), subfield.String()})
+	w.IAdjusted = true
+	w.Offset++
 	return
 }

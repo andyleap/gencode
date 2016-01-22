@@ -17,12 +17,18 @@ func init() {
 	{
 		for k := range {{.Target}} {
 			{{.SubTypeCode}}
+			{{if gt .SubOffset 0 }}
+			i += {{.SubOffset}}
+			{{end}}
 		}
 	}`))
 	template.Must(ArrayTemps.New("unmarshal").Parse(`
 	{
 		for k := range {{.Target}} {
 			{{.SubTypeCode}}
+			{{if gt .SubOffset 0 }}
+			i += {{.SubOffset}}
+			{{end}}
 		}
 	}`))
 	template.Must(ArrayTemps.New("bytemarshal").Parse(`
@@ -39,6 +45,9 @@ func init() {
 	{
 		for k := range {{.Target}} {
 			{{.SubTypeCode}}
+			{{if gt .SubOffset 0 }}
+			s += {{.SubOffset}}
+			{{end}}
 		}
 	}`))
 	template.Must(ArrayTemps.New("bytesize").Parse(`
@@ -50,15 +59,16 @@ func init() {
 
 type ArrayTemp struct {
 	*schema.ArrayType
+	SubOffset   int
 	Target      string
 	SubTypeCode string
 	SubField    string
 }
 
-func WalkArrayDef(at *schema.ArrayType) (parts *StringBuilder, err error) {
+func (w *Walker) WalkArrayDef(at *schema.ArrayType) (parts *StringBuilder, err error) {
 	parts = &StringBuilder{}
 	parts.Append(fmt.Sprintf("[%d]", at.Count))
-	sub, err := WalkTypeDef(at.SubType)
+	sub, err := w.WalkTypeDef(at.SubType)
 	if err != nil {
 		return nil, err
 	}
@@ -66,52 +76,64 @@ func WalkArrayDef(at *schema.ArrayType) (parts *StringBuilder, err error) {
 	return
 }
 
-func WalkArraySize(at *schema.ArrayType, target string) (parts *StringBuilder, err error) {
+func (w *Walker) WalkArraySize(at *schema.ArrayType, target string) (parts *StringBuilder, err error) {
 	parts = &StringBuilder{}
-	subtypecode, err := WalkTypeSize(at.SubType, target+"[k]")
+	w.IAdjusted = true
+	offset := w.Offset
+	subtypecode, err := w.WalkTypeSize(at.SubType, target+"[k]")
 	if err != nil {
 		return nil, err
 	}
+	SubOffset := w.Offset - offset
+	w.Offset = offset
 	if _, ok := at.SubType.(*schema.ByteType); ok {
-		err = parts.AddTemplate(ArrayTemps, "bytesize", ArrayTemp{at, target, subtypecode.String(), ""})
+		err = parts.AddTemplate(ArrayTemps, "bytesize", ArrayTemp{at, SubOffset, target, subtypecode.String(), ""})
 	} else {
-		err = parts.AddTemplate(ArrayTemps, "size", ArrayTemp{at, target, subtypecode.String(), ""})
+		err = parts.AddTemplate(ArrayTemps, "size", ArrayTemp{at, SubOffset, target, subtypecode.String(), ""})
 	}
 	return
 }
 
-func WalkArrayMarshal(at *schema.ArrayType, target string) (parts *StringBuilder, err error) {
+func (w *Walker) WalkArrayMarshal(at *schema.ArrayType, target string) (parts *StringBuilder, err error) {
 	parts = &StringBuilder{}
-	subtypecode, err := WalkTypeMarshal(at.SubType, target+"[k]")
+	w.IAdjusted = true
+	offset := w.Offset
+	subtypecode, err := w.WalkTypeMarshal(at.SubType, target+"[k]")
 	if err != nil {
 		return nil, err
 	}
-	subfield, err := WalkTypeDef(at.SubType)
+	SubOffset := w.Offset - offset
+	w.Offset = offset
+	subfield, err := w.WalkTypeDef(at.SubType)
 	if err != nil {
 		return nil, err
 	}
 	if _, ok := at.SubType.(*schema.ByteType); ok {
-		err = parts.AddTemplate(ArrayTemps, "bytemarshal", ArrayTemp{at, target, subtypecode.String(), subfield.String()})
+		err = parts.AddTemplate(ArrayTemps, "bytemarshal", ArrayTemp{at, SubOffset, target, subtypecode.String(), subfield.String()})
 	} else {
-		err = parts.AddTemplate(ArrayTemps, "marshal", ArrayTemp{at, target, subtypecode.String(), subfield.String()})
+		err = parts.AddTemplate(ArrayTemps, "marshal", ArrayTemp{at, SubOffset, target, subtypecode.String(), subfield.String()})
 	}
 	return
 }
 
-func WalkArrayUnmarshal(at *schema.ArrayType, target string) (parts *StringBuilder, err error) {
+func (w *Walker) WalkArrayUnmarshal(at *schema.ArrayType, target string) (parts *StringBuilder, err error) {
 	parts = &StringBuilder{}
-	subtypecode, err := WalkTypeUnmarshal(at.SubType, target+"[k]")
+	w.IAdjusted = true
+	offset := w.Offset
+	subtypecode, err := w.WalkTypeUnmarshal(at.SubType, target+"[k]")
 	if err != nil {
 		return nil, err
 	}
-	subfield, err := WalkTypeDef(at.SubType)
+	SubOffset := w.Offset - offset
+	w.Offset = offset
+	subfield, err := w.WalkTypeDef(at.SubType)
 	if err != nil {
 		return nil, err
 	}
 	if _, ok := at.SubType.(*schema.ByteType); ok {
-		err = parts.AddTemplate(ArrayTemps, "byteunmarshal", ArrayTemp{at, target, subtypecode.String(), subfield.String()})
+		err = parts.AddTemplate(ArrayTemps, "byteunmarshal", ArrayTemp{at, SubOffset, target, subtypecode.String(), subfield.String()})
 	} else {
-		err = parts.AddTemplate(ArrayTemps, "unmarshal", ArrayTemp{at, target, subtypecode.String(), subfield.String()})
+		err = parts.AddTemplate(ArrayTemps, "unmarshal", ArrayTemp{at, SubOffset, target, subtypecode.String(), subfield.String()})
 	}
 	return
 }

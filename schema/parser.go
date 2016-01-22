@@ -67,6 +67,12 @@ func MakeGrammar() *Grammar {
 		return s, nil
 	})
 
+	gTimeField := And(Lit("time"))
+	gTimeField.Node(func(m Match) (Match, error) {
+		s := &TimeType{}
+		return s, nil
+	})
+
 	gDeferField := And(gIdentifier)
 	gDeferField.Node(func(m Match) (Match, error) {
 		s := &DeferType{
@@ -117,7 +123,7 @@ func MakeGrammar() *Grammar {
 		}, nil
 	})
 
-	gType.Set(Or(gSlice, gArray, gPointer, gIntField, gByteField, gBoolField, gStringField, gFloatField, gUnion, gDeferField))
+	gType.Set(Or(gSlice, gArray, gPointer, gIntField, gByteField, gBoolField, gStringField, gTimeField, gFloatField, gUnion, gDeferField))
 
 	gField := And(Tag("Name", gIdentifier), Require(RWS, Tag("Type", gType), NL))
 	gField.Node(func(m Match) (Match, error) {

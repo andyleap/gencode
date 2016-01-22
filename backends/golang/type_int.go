@@ -32,19 +32,22 @@ func init() {
    		}
 		{{end}}
 		for t >= 0x80 {
-			buf[i] = byte(t) | 0x80
+			buf[i + {{.W.Offset}}] = byte(t) | 0x80
 			t >>= 7
 			i++
 		}
-		buf[i] = byte(t)
+		buf[i + {{.W.Offset}}] = byte(t)
 		i++
 		
 		{{else}}
 		
+		{{if .W.Unsafe}}
+		{{.Target}} = *(*{{if not .Signed}}u{{end}}int{{.Bits}})(unsafe.Pointer(&buf[{{if $.W.IAdjusted}}i + {{end}}{{$.W.Offset}}]))
+		{{else}}
 		{{range BitRange .Bits}}
-		buf[i + {{Bytes .}}] = byte({{$.Target}} >> {{.}})
+		buf[{{if $.W.IAdjusted}}i + {{end}}{{Bytes .}} + {{$.W.Offset}}] = byte({{$.Target}} >> {{.}})
 		{{end}}
-		i += {{Bytes .Bits}}
+		{{end}}
 		
 		{{end}}
 	}`))
@@ -52,10 +55,10 @@ func init() {
 	{
 		{{if .VarInt}}
 		bs := uint8(7)
-		t := uint{{.Bits}}(buf[i] & 0x7F)
-		for buf[i] & 0x80 == 0x80 {
+		t := uint{{.Bits}}(buf[i + {{.W.Offset}}] & 0x7F)
+		for buf[i + {{.W.Offset}}] & 0x80 == 0x80 {
 			i++
-			t |= uint{{.Bits}}(buf[i]&0x7F) << bs
+			t |= uint{{.Bits}}(buf[i + {{.W.Offset}}]&0x7F) << bs
 			bs += 7
 		}
 		i++
@@ -70,18 +73,18 @@ func init() {
 		
 		{{else}}
 		
-		{{.Target}} = 0
-		{{range BitRange .Bits}}
-		{{$.Target}} |= {{if not $.Signed}}u{{end}}int{{$.Bits}}(buf[i + {{Bytes .}}]) << {{.}}
+		{{if .W.Unsafe}}
+		{{.Target}} = *(*{{if not .Signed}}u{{end}}int{{.Bits}})(unsafe.Pointer(&buf[{{if $.W.IAdjusted}}i + {{end}}{{$.W.Offset}}]))
+		{{else}}
+		{{$.Target}} = 0{{range BitRange .Bits}} | ({{if not $.Signed}}u{{end}}int{{$.Bits}}(buf[{{if $.W.IAdjusted}}i + {{end}}{{Bytes .}} + {{$.W.Offset}}]) << {{.}}){{end}}
 		{{end}}
-		i += {{Bytes .Bits}}
 		
 		{{end}}
 	}`))
 	template.Must(IntTemps.New("field").Parse(`{{if not .Signed}}u{{end}}int{{.Bits}}`))
 	template.Must(IntTemps.New("size").Parse(`
 	{
-		{{if not .VarInt}}s += {{Bytes .Bits}}{{else}}
+		{{if .VarInt}}
 		{{if .Signed}}
 		t := uint{{.Bits}}({{.Target}})
 		t <<= 1
@@ -107,29 +110,45 @@ func init() {
 
 type IntTemp struct {
 	*schema.IntType
+	W      *Walker
 	Target string
 }
 
-func WalkIntDef(it *schema.IntType) (parts *StringBuilder, err error) {
+func (w *Walker) WalkIntDef(it *schema.IntType) (parts *StringBuilder, err error) {
 	parts = &StringBuilder{}
 	err = parts.AddTemplate(IntTemps, "field", it)
 	return
 }
 
-func WalkIntSize(it *schema.IntType, target string) (parts *StringBuilder, err error) {
+func (w *Walker) WalkIntSize(it *schema.IntType, target string) (parts *StringBuilder, err error) {
 	parts = &StringBuilder{}
-	err = parts.AddTemplate(IntTemps, "size", IntTemp{it, target})
+	if !it.VarInt {
+		w.Offset += it.Bits / 8
+		return
+	}
+	w.IAdjusted = true
+	err = parts.AddTemplate(IntTemps, "size", IntTemp{it, w, target})
 	return
 }
 
-func WalkIntMarshal(it *schema.IntType, target string) (parts *StringBuilder, err error) {
+func (w *Walker) WalkIntMarshal(it *schema.IntType, target string) (parts *StringBuilder, err error) {
 	parts = &StringBuilder{}
-	err = parts.AddTemplate(IntTemps, "marshal", IntTemp{it, target})
+	err = parts.AddTemplate(IntTemps, "marshal", IntTemp{it, w, target})
+	if !it.VarInt {
+		w.Offset += it.Bits / 8
+	} else {
+		w.IAdjusted = true
+	}
 	return
 }
 
-func WalkIntUnmarshal(it *schema.IntType, target string) (parts *StringBuilder, err error) {
+func (w *Walker) WalkIntUnmarshal(it *schema.IntType, target string) (parts *StringBuilder, err error) {
 	parts = &StringBuilder{}
-	err = parts.AddTemplate(IntTemps, "unmarshal", IntTemp{it, target})
+	err = parts.AddTemplate(IntTemps, "unmarshal", IntTemp{it, w, target})
+	if !it.VarInt {
+		w.Offset += it.Bits / 8
+	} else {
+		w.IAdjusted = true
+	}
 	return
 }
