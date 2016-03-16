@@ -47,6 +47,7 @@ func (d *%s) FramedSize() (s uint64, us uint64) {
 	s += %d`, w.Offset))
 		w.Offset = 0
 	}
+	w.IAdjusted = false
 	if s.Framed {
 		intcode, err := w.WalkIntSize(intHandler, "l")
 		if err != nil {
@@ -137,6 +138,7 @@ func (d *%s) Unmarshal(buf []byte) (uint64, error) {
 }
 `, w.Offset))
 	w.Offset = 0
+	w.IAdjusted = false
 	if s.Framed {
 		parts.Append(fmt.Sprintf(`
 func (d *%s) Serialize(w io.Writer) (error) {

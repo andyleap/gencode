@@ -125,8 +125,9 @@ func (w *Walker) WalkIntSize(it *schema.IntType, target string) (parts *StringBu
 	if !it.VarInt {
 		w.Offset += it.Bits / 8
 		return
+	} else {
+		w.IAdjusted = true
 	}
-	w.IAdjusted = true
 	err = parts.AddTemplate(IntTemps, "size", IntTemp{it, w, target})
 	return
 }

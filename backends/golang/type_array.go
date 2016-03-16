@@ -33,12 +33,12 @@ func init() {
 	}`))
 	template.Must(ArrayTemps.New("bytemarshal").Parse(`
 	{
-		copy(buf[i:], {{.Target}}[:])
+		copy(buf[{{if $.W.IAdjusted}}i + {{end}}{{$.W.Offset}}:], {{.Target}}[:])
 		i += {{.Count}}
 	}`))
 	template.Must(ArrayTemps.New("byteunmarshal").Parse(`
 	{
-		copy({{.Target}}[:], buf[i:])
+		copy({{.Target}}[:], buf[{{if $.W.IAdjusted}}i + {{end}}{{$.W.Offset}}:])
 		i += {{.Count}}
 	}`))
 	template.Must(ArrayTemps.New("size").Parse(`
@@ -59,6 +59,7 @@ func init() {
 
 type ArrayTemp struct {
 	*schema.ArrayType
+	W           *Walker
 	SubOffset   int
 	Target      string
 	SubTypeCode string
@@ -87,9 +88,9 @@ func (w *Walker) WalkArraySize(at *schema.ArrayType, target string) (parts *Stri
 	SubOffset := w.Offset - offset
 	w.Offset = offset
 	if _, ok := at.SubType.(*schema.ByteType); ok {
-		err = parts.AddTemplate(ArrayTemps, "bytesize", ArrayTemp{at, SubOffset, target, subtypecode.String(), ""})
+		err = parts.AddTemplate(ArrayTemps, "bytesize", ArrayTemp{at, w, SubOffset, target, subtypecode.String(), ""})
 	} else {
-		err = parts.AddTemplate(ArrayTemps, "size", ArrayTemp{at, SubOffset, target, subtypecode.String(), ""})
+		err = parts.AddTemplate(ArrayTemps, "size", ArrayTemp{at, w, SubOffset, target, subtypecode.String(), ""})
 	}
 	return
 }
@@ -109,9 +110,9 @@ func (w *Walker) WalkArrayMarshal(at *schema.ArrayType, target string) (parts *S
 		return nil, err
 	}
 	if _, ok := at.SubType.(*schema.ByteType); ok {
-		err = parts.AddTemplate(ArrayTemps, "bytemarshal", ArrayTemp{at, SubOffset, target, subtypecode.String(), subfield.String()})
+		err = parts.AddTemplate(ArrayTemps, "bytemarshal", ArrayTemp{at, w, SubOffset, target, subtypecode.String(), subfield.String()})
 	} else {
-		err = parts.AddTemplate(ArrayTemps, "marshal", ArrayTemp{at, SubOffset, target, subtypecode.String(), subfield.String()})
+		err = parts.AddTemplate(ArrayTemps, "marshal", ArrayTemp{at, w, SubOffset, target, subtypecode.String(), subfield.String()})
 	}
 	return
 }
@@ -131,9 +132,9 @@ func (w *Walker) WalkArrayUnmarshal(at *schema.ArrayType, target string) (parts 
 		return nil, err
 	}
 	if _, ok := at.SubType.(*schema.ByteType); ok {
-		err = parts.AddTemplate(ArrayTemps, "byteunmarshal", ArrayTemp{at, SubOffset, target, subtypecode.String(), subfield.String()})
+		err = parts.AddTemplate(ArrayTemps, "byteunmarshal", ArrayTemp{at, w, SubOffset, target, subtypecode.String(), subfield.String()})
 	} else {
-		err = parts.AddTemplate(ArrayTemps, "unmarshal", ArrayTemp{at, SubOffset, target, subtypecode.String(), subfield.String()})
+		err = parts.AddTemplate(ArrayTemps, "unmarshal", ArrayTemp{at, w, SubOffset, target, subtypecode.String(), subfield.String()})
 	}
 	return
 }
