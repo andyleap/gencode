@@ -10,6 +10,42 @@ struct Person {
   Age uint8
 }
 ```
+
+Run through using `gencode go -schema test.schema -package test`
+
+Yields:
+```
+package test
+
+import (
+	"io"
+	"time"
+	"unsafe"
+)
+
+var (
+	_ = unsafe.Sizeof(0)
+	_ = io.ReadFull
+	_ = time.Now()
+)
+
+type Person struct {
+	Name string
+	Age  uint8
+}
+
+func (d *Person) Size() (s uint64) {
+ ...
+}
+func (d *Person) Marshal(buf []byte) ([]byte, error) {
+ ...
+}
+func (d *Person) Unmarshal(buf []byte) (uint64, error) {
+ ...
+}
+```
+(bulk removed for size reasons)
+
 # Data Types
 ## Struct
 Structs are built, similar to native Go, from various fields of various types.  The format is slightly different, putting the `struct` keyword in front of the name of the struct and dropping the `type` keyword, in order to differentiate Gencode schemas from Go code.  Structs may optionally be "framed", adding `Serialize` and `Deserialize` functions taking a `io.Writer` or `io.Reader` respectively.  These structs have a prefixed `vuint64` for the length of the whole struct, minus the prefix length.  This allows efficient reading from network sockets and other streams.
