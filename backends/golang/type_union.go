@@ -17,15 +17,15 @@ func init() {
 	{
 		var v uint64
 		switch {{.Target}}.(type) {
-			{{range $id, $struct := .Structs}}
-		case {{$struct.Struct.Name}}:
+			{{range $id, $type := .SubTypeField}}
+		case {{$type}}:
 			v = {{$id}} + 1
 			{{end}}
 		}
 		{{.VarIntCode}}
 		switch tt := {{.Target}}.(type) {
-			{{range $id, $struct := .Structs}}
-		case {{$struct.Struct.Name}}:
+			{{range $id, $type := .SubTypeField}}
+		case {{$type}}:
 			{{index $.SubTypeCode $id}}
 			{{if gt (index $.SubTypeOffset $id) 0 }}
 			i += {{index $.SubTypeOffset $id}}
@@ -38,9 +38,9 @@ func init() {
 		v := uint64(0)
 		{{.VarIntCode}}
 		switch v {
-			{{range $id, $struct := .Structs}}
+			{{range $id, $type := .SubTypeField}}
 		case {{$id}} + 1:
-			var tt {{index $.SubTypeField $id}}
+			var tt {{$type}}
 			{{index $.SubTypeCode $id}}
 			{{if gt (index $.SubTypeOffset $id) 0 }}
 			i += {{index $.SubTypeOffset $id}}
@@ -55,15 +55,15 @@ func init() {
 	{
 		var v uint64
 		switch {{.Target}}.(type) {
-			{{range $id, $struct := .Structs}}
-		case {{$struct.Struct.Name}}:
+			{{range $id, $type := .SubTypeField}}
+		case {{$type}}:
 			v = {{$id}} + 1
 			{{end}}
 		}
 		{{.VarIntCode}}
 		switch tt := {{.Target}}.(type) {
-			{{range $id, $struct := .Structs}}
-		case {{$struct.Struct.Name}}:
+			{{range $id, $type := .SubTypeField}}
+		case {{$type}}:
 			{{index $.SubTypeCode $id}}
 			{{if gt (index $.SubTypeOffset $id) 0 }}
 			s += {{index $.SubTypeOffset $id}}
@@ -96,7 +96,7 @@ func (w *Walker) WalkUnionSize(ut *schema.UnionType, target string) (parts *Stri
 		Signed: false,
 		VarInt: true,
 	}
-	intcode, err := w.WalkIntSize(intHandler, "l")
+	intcode, err := w.WalkIntSize(intHandler, "v")
 	if err != nil {
 		return nil, err
 	}
@@ -104,7 +104,7 @@ func (w *Walker) WalkUnionSize(ut *schema.UnionType, target string) (parts *Stri
 	subtypeoffsets := []int{}
 	for _, st := range ut.Types {
 		offset := w.Offset
-		subType, err := w.WalkTypeSize(st, "t")
+		subType, err := w.WalkTypeSize(st, "tt")
 		if err != nil {
 			return nil, err
 		}
@@ -113,8 +113,15 @@ func (w *Walker) WalkUnionSize(ut *schema.UnionType, target string) (parts *Stri
 		subtypeoffsets = append(subtypeoffsets, SubOffset)
 		subtypecodes = append(subtypecodes, subType.String())
 	}
-
-	err = parts.AddTemplate(UnionTemps, "size", UnionTemp{ut, target, intcode.String(), subtypecodes, nil, subtypeoffsets})
+	subtypefields := []string{}
+	for _, st := range ut.Types {
+		subType, err := w.WalkTypeDef(st)
+		if err != nil {
+			return nil, err
+		}
+		subtypefields = append(subtypefields, subType.String())
+	}
+	err = parts.AddTemplate(UnionTemps, "size", UnionTemp{ut, target, intcode.String(), subtypecodes, subtypefields, subtypeoffsets})
 	return
 }
 
@@ -125,7 +132,7 @@ func (w *Walker) WalkUnionMarshal(ut *schema.UnionType, target string) (parts *S
 		Signed: false,
 		VarInt: true,
 	}
-	intcode, err := w.WalkIntMarshal(intHandler, "l")
+	intcode, err := w.WalkIntMarshal(intHandler, "v")
 	if err != nil {
 		return nil, err
 	}
@@ -133,7 +140,7 @@ func (w *Walker) WalkUnionMarshal(ut *schema.UnionType, target string) (parts *S
 	subtypeoffsets := []int{}
 	for _, st := range ut.Types {
 		offset := w.Offset
-		subType, err := w.WalkTypeMarshal(st, "t")
+		subType, err := w.WalkTypeMarshal(st, "tt")
 		if err != nil {
 			return nil, err
 		}
@@ -142,8 +149,15 @@ func (w *Walker) WalkUnionMarshal(ut *schema.UnionType, target string) (parts *S
 		subtypeoffsets = append(subtypeoffsets, SubOffset)
 		subtypecodes = append(subtypecodes, subType.String())
 	}
-
-	err = parts.AddTemplate(UnionTemps, "marshal", UnionTemp{ut, target, intcode.String(), subtypecodes, nil, subtypeoffsets})
+	subtypefields := []string{}
+	for _, st := range ut.Types {
+		subType, err := w.WalkTypeDef(st)
+		if err != nil {
+			return nil, err
+		}
+		subtypefields = append(subtypefields, subType.String())
+	}
+	err = parts.AddTemplate(UnionTemps, "marshal", UnionTemp{ut, target, intcode.String(), subtypecodes, subtypefields, subtypeoffsets})
 	return
 }
 
@@ -154,7 +168,7 @@ func (w *Walker) WalkUnionUnmarshal(ut *schema.UnionType, target string) (parts 
 		Signed: false,
 		VarInt: true,
 	}
-	intcode, err := w.WalkIntUnmarshal(intHandler, "l")
+	intcode, err := w.WalkIntUnmarshal(intHandler, "v")
 	if err != nil {
 		return nil, err
 	}
@@ -162,7 +176,7 @@ func (w *Walker) WalkUnionUnmarshal(ut *schema.UnionType, target string) (parts 
 	subtypeoffsets := []int{}
 	for _, st := range ut.Types {
 		offset := w.Offset
-		subType, err := w.WalkTypeUnmarshal(st, "t")
+		subType, err := w.WalkTypeUnmarshal(st, "tt")
 		if err != nil {
 			return nil, err
 		}
