@@ -16,4 +16,5 @@ struct A {
 	Siblings int64
 	Spouse   uint8
 	Money    float64
+	Children []string
 }
