@@ -62,12 +62,18 @@ func init() {
 	{
 		l := uint64(len({{.Target}}))
 		{{.VarIntCode}}
+		{{if eq .SubTypeCode "" }}
+		{{if gt .SubOffset 0 }}
+		s += {{.SubOffset}}*l
+		{{end}}
+		{{else}}
 		for k := range {{.Target}} {
 			{{.SubTypeCode}}
 			{{if gt .SubOffset 0 }}
 			s += {{.SubOffset}}
 			{{end}}
 		}
+		{{end}}
 	}`))
 	template.Must(SliceTemps.New("bytesize").Parse(`
 	{

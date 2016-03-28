@@ -2,12 +2,14 @@ package main
 
 import (
 	"io"
+	"time"
 	"unsafe"
 )
 
 var (
 	_ = unsafe.Sizeof(0)
 	_ = io.ReadFull
+	_ = time.Now()
 )
 
 type Person struct {
@@ -63,7 +65,7 @@ func (d *Person) Marshal(buf []byte) ([]byte, error) {
 			i++
 
 		}
-		copy(buf[i:], d.Name)
+		copy(buf[i+0:], d.Name)
 		i += l
 	}
 	{
@@ -105,7 +107,7 @@ func (d *Person) Unmarshal(buf []byte) (uint64, error) {
 
 			bs := uint8(7)
 			t := uint64(buf[i+0] & 0x7F)
-			for buf[i]&0x80 == 0x80 {
+			for buf[i+0]&0x80 == 0x80 {
 				i++
 				t |= uint64(buf[i+0]&0x7F) << bs
 				bs += 7
@@ -115,7 +117,7 @@ func (d *Person) Unmarshal(buf []byte) (uint64, error) {
 			l = t
 
 		}
-		d.Name = string(buf[i : i+l])
+		d.Name = string(buf[i+0 : i+0+l])
 		i += l
 	}
 	{
@@ -167,6 +169,7 @@ func (d *Group) FramedSize() (s uint64, us uint64) {
 			s++
 
 		}
+
 		for k := range d.Members {
 
 			{
@@ -174,6 +177,7 @@ func (d *Group) FramedSize() (s uint64, us uint64) {
 			}
 
 		}
+
 	}
 	l := s
 	us = s
@@ -235,7 +239,7 @@ func (d *Group) Marshal(buf []byte) ([]byte, error) {
 			i++
 
 		}
-		copy(buf[i:], d.Name)
+		copy(buf[i+0:], d.Name)
 		i += l
 	}
 	{
@@ -277,7 +281,7 @@ func (d *Group) Unmarshal(buf []byte) (uint64, error) {
 
 		bs := uint8(7)
 		t := uint64(buf[i+0] & 0x7F)
-		for buf[i]&0x80 == 0x80 {
+		for buf[i+0]&0x80 == 0x80 {
 			i++
 			t |= uint64(buf[i+0]&0x7F) << bs
 			bs += 7
@@ -297,7 +301,7 @@ func (d *Group) Unmarshal(buf []byte) (uint64, error) {
 
 			bs := uint8(7)
 			t := uint64(buf[i+0] & 0x7F)
-			for buf[i]&0x80 == 0x80 {
+			for buf[i+0]&0x80 == 0x80 {
 				i++
 				t |= uint64(buf[i+0]&0x7F) << bs
 				bs += 7
@@ -307,7 +311,7 @@ func (d *Group) Unmarshal(buf []byte) (uint64, error) {
 			l = t
 
 		}
-		d.Name = string(buf[i : i+l])
+		d.Name = string(buf[i+0 : i+0+l])
 		i += l
 	}
 	{
@@ -317,7 +321,7 @@ func (d *Group) Unmarshal(buf []byte) (uint64, error) {
 
 			bs := uint8(7)
 			t := uint64(buf[i+0] & 0x7F)
-			for buf[i]&0x80 == 0x80 {
+			for buf[i+0]&0x80 == 0x80 {
 				i++
 				t |= uint64(buf[i+0]&0x7F) << bs
 				bs += 7
@@ -400,6 +404,7 @@ type A struct {
 	Siblings int64
 	Spouse   uint8
 	Money    float64
+	Children []string
 }
 
 func (d *A) Size() (s uint64) {
@@ -434,6 +439,41 @@ func (d *A) Size() (s uint64) {
 		}
 		s += l
 	}
+	{
+		l := uint64(len(d.Children))
+
+		{
+
+			t := l
+			for t >= 0x80 {
+				t <<= 7
+				s++
+			}
+			s++
+
+		}
+
+		for k := range d.Children {
+
+			{
+				l := uint64(len(d.Children[k]))
+
+				{
+
+					t := l
+					for t >= 0x80 {
+						t <<= 7
+						s++
+					}
+					s++
+
+				}
+				s += l
+			}
+
+		}
+
+	}
 	s += 25
 	return
 }
@@ -464,7 +504,7 @@ func (d *A) Marshal(buf []byte) ([]byte, error) {
 			i++
 
 		}
-		copy(buf[i:], d.Name)
+		copy(buf[i+0:], d.Name)
 		i += l
 	}
 	{
@@ -502,7 +542,7 @@ func (d *A) Marshal(buf []byte) ([]byte, error) {
 			i++
 
 		}
-		copy(buf[i:], d.Phone)
+		copy(buf[i+8:], d.Phone)
 		i += l
 	}
 	{
@@ -550,6 +590,46 @@ func (d *A) Marshal(buf []byte) ([]byte, error) {
 		buf[i+7+17] = byte(v >> 56)
 
 	}
+	{
+		l := uint64(len(d.Children))
+
+		{
+
+			t := uint64(l)
+
+			for t >= 0x80 {
+				buf[i+25] = byte(t) | 0x80
+				t >>= 7
+				i++
+			}
+			buf[i+25] = byte(t)
+			i++
+
+		}
+		for k := range d.Children {
+
+			{
+				l := uint64(len(d.Children[k]))
+
+				{
+
+					t := uint64(l)
+
+					for t >= 0x80 {
+						buf[i+25] = byte(t) | 0x80
+						t >>= 7
+						i++
+					}
+					buf[i+25] = byte(t)
+					i++
+
+				}
+				copy(buf[i+25:], d.Children[k])
+				i += l
+			}
+
+		}
+	}
 	return buf[:i+25], nil
 }
 
@@ -563,7 +643,7 @@ func (d *A) Unmarshal(buf []byte) (uint64, error) {
 
 			bs := uint8(7)
 			t := uint64(buf[i+0] & 0x7F)
-			for buf[i]&0x80 == 0x80 {
+			for buf[i+0]&0x80 == 0x80 {
 				i++
 				t |= uint64(buf[i+0]&0x7F) << bs
 				bs += 7
@@ -573,7 +653,7 @@ func (d *A) Unmarshal(buf []byte) (uint64, error) {
 			l = t
 
 		}
-		d.Name = string(buf[i : i+l])
+		d.Name = string(buf[i+0 : i+0+l])
 		i += l
 	}
 	{
@@ -588,7 +668,7 @@ func (d *A) Unmarshal(buf []byte) (uint64, error) {
 
 			bs := uint8(7)
 			t := uint64(buf[i+8] & 0x7F)
-			for buf[i]&0x80 == 0x80 {
+			for buf[i+8]&0x80 == 0x80 {
 				i++
 				t |= uint64(buf[i+8]&0x7F) << bs
 				bs += 7
@@ -598,7 +678,7 @@ func (d *A) Unmarshal(buf []byte) (uint64, error) {
 			l = t
 
 		}
-		d.Phone = string(buf[i : i+l])
+		d.Phone = string(buf[i+8 : i+8+l])
 		i += l
 	}
 	{
@@ -616,6 +696,53 @@ func (d *A) Unmarshal(buf []byte) (uint64, error) {
 		v := 0 | (uint64(buf[i+0+17]) << 0) | (uint64(buf[i+1+17]) << 8) | (uint64(buf[i+2+17]) << 16) | (uint64(buf[i+3+17]) << 24) | (uint64(buf[i+4+17]) << 32) | (uint64(buf[i+5+17]) << 40) | (uint64(buf[i+6+17]) << 48) | (uint64(buf[i+7+17]) << 56)
 		d.Money = *(*float64)(unsafe.Pointer(&v))
 
+	}
+	{
+		l := uint64(0)
+
+		{
+
+			bs := uint8(7)
+			t := uint64(buf[i+25] & 0x7F)
+			for buf[i+25]&0x80 == 0x80 {
+				i++
+				t |= uint64(buf[i+25]&0x7F) << bs
+				bs += 7
+			}
+			i++
+
+			l = t
+
+		}
+		if uint64(cap(d.Children)) >= l {
+			d.Children = d.Children[:l]
+		} else {
+			d.Children = make([]string, l)
+		}
+		for k := range d.Children {
+
+			{
+				l := uint64(0)
+
+				{
+
+					bs := uint8(7)
+					t := uint64(buf[i+25] & 0x7F)
+					for buf[i+25]&0x80 == 0x80 {
+						i++
+						t |= uint64(buf[i+25]&0x7F) << bs
+						bs += 7
+					}
+					i++
+
+					l = t
+
+				}
+				d.Children[k] = string(buf[i+25 : i+25+l])
+				i += l
+			}
+
+		}
 	}
 	return i + 25, nil
 }
