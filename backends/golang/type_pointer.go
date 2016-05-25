@@ -15,16 +15,16 @@ func init() {
 	template.Must(PointerTemps.New("marshal").Parse(`
 	{
 		if {{.Target}} == nil {
-			buf[{{if .W.IAdjusted}}i + {{end}}{{.Offset}}] = 0
+			buf[{{if .W.IAdjusted}}i + {{end}}{{.W.Offset}}] = 0
 		} else {
-			buf[{{if .W.IAdjusted}}i + {{end}}{{.Offset}}] = 1
+			buf[{{if .W.IAdjusted}}i + {{end}}{{.W.Offset}}] = 1
 			{{.SubTypeCode}}
 			i += {{.SubOffset}}
 		}
 	}`))
 	template.Must(PointerTemps.New("unmarshal").Parse(`
 	{
-		if buf[{{if .W.IAdjusted}}i + {{end}}{{.Offset}}] == 1 {
+		if buf[{{if .W.IAdjusted}}i + {{end}}{{.W.Offset}}] == 1 {
 			if {{.Target}} == nil {
 				{{.Target}} = new({{.SubField}})
 			}
