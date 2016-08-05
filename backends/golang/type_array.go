@@ -44,6 +44,7 @@ func init() {
 	template.Must(ArrayTemps.New("size").Parse(`
 	{
 		for k := range {{.Target}} {
+			_ = k  // make compiler happy in case k is unused
 			{{.SubTypeCode}}
 			{{if gt .SubOffset 0 }}
 			s += {{.SubOffset}}

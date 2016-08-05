@@ -1,0 +1,13 @@
+struct Array {
+	A [3]int32
+	B [3]Nested
+
+	C []int32
+	D []Nested
+
+}
+
+struct Nested {
+	A [16]string
+	B []string
+}
