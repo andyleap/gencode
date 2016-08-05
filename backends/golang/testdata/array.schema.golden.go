@@ -1,4 +1,4 @@
-package array
+package testdata
 
 import (
 	"io"
@@ -46,7 +46,7 @@ func (d *Array) Size() (s uint64) {
 
 			t := l
 			for t >= 0x80 {
-				t <<= 7
+				t >>= 7
 				s++
 			}
 			s++
@@ -63,7 +63,7 @@ func (d *Array) Size() (s uint64) {
 
 			t := l
 			for t >= 0x80 {
-				t <<= 7
+				t >>= 7
 				s++
 			}
 			s++
@@ -307,7 +307,7 @@ func (d *Nested) Size() (s uint64) {
 
 					t := l
 					for t >= 0x80 {
-						t <<= 7
+						t >>= 7
 						s++
 					}
 					s++
@@ -325,7 +325,7 @@ func (d *Nested) Size() (s uint64) {
 
 			t := l
 			for t >= 0x80 {
-				t <<= 7
+				t >>= 7
 				s++
 			}
 			s++
@@ -341,7 +341,7 @@ func (d *Nested) Size() (s uint64) {
 
 					t := l
 					for t >= 0x80 {
-						t <<= 7
+						t >>= 7
 						s++
 					}
 					s++

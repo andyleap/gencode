@@ -1,0 +1,18 @@
+struct Ints {
+	Vint8	vint8
+	Vint16	vint16
+	Vint32	vint32
+	Vint64	vint64
+	Vuint8 	vuint8
+	Vuint16 vuint16
+	Vuint32	vuint32
+	Vuint64	vuint64
+	Int8	int8
+	Int16	int16
+	Int32	int32
+	Int64	int64
+	Uint8	uint8
+	Uint16	uint16
+	Uint32	uint32
+	Uint64	uint64
+}

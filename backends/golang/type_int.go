@@ -92,14 +92,14 @@ func init() {
 			t = ^t
 		}
 		for t >= 0x80 {
-			t <<= 7
+			t >>= 7
 			s++
 		}
 		s++
 		{{else}}
 		t := {{.Target}}
 		for t >= 0x80 {
-			t <<= 7
+			t >>= 7
 			s++
 		}
 		s++

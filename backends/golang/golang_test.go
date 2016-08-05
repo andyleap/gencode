@@ -25,10 +25,11 @@ func TestGolangBackend(t *testing.T) {
 
 	for _, tc := range []string{
 		"array.schema",
+		"int.schema",
 	} {
 		inputF := filepath.Join("./testdata", tc)
 		outputF := filepath.Join(dir, tc+".go")
-		goldenF := inputF+".golden"
+		goldenF := inputF+".golden.go"
 
 		in, err := ioutil.ReadFile(inputF)
 		if err != nil {
@@ -39,7 +40,7 @@ func TestGolangBackend(t *testing.T) {
 			t.Fatalf("%v: Failed schema.ParseSchema: %v", tc, err)
 		}
 
-		b := GolangBackend{Package: "array"}
+		b := GolangBackend{Package: "testdata"}
 		g, err := b.Generate(s)
 		if err != nil {
 			t.Fatalf("%v: Failed Generate: %v", tc, err)
