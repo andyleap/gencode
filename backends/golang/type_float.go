@@ -1,6 +1,7 @@
 package golang
 
 import (
+	"sort"
 	"text/template"
 
 	"github.com/andyleap/gencode/schema"
@@ -12,11 +13,12 @@ var (
 
 func init() {
 	FloatTemps = template.New("FloatTemps").Funcs(template.FuncMap{
-		"Bytes": func(bits int) int {
-			return bits / 8
-		},
-		"BitRange": func(bits int) []int {
-			return []int{0, 8, 16, 24, 32, 40, 48, 56, 64}[0:(bits / 8)]
+		"BitRange": func(bits int, bigEndian bool) []int {
+			ar := []int{0, 8, 16, 24, 32, 40, 48, 56, 64}[0:(bits / 8)]
+			if bigEndian {
+				sort.Sort(sort.Reverse(sort.IntSlice(ar)))
+			}
+			return ar
 		},
 	})
 
@@ -26,8 +28,8 @@ func init() {
 		*(*float{{.Bits}})(unsafe.Pointer(&buf[{{if .W.IAdjusted}}i + {{end}}{{.W.Offset}}])) = {{.Target}}
 		{{else}}
 		v := *(*uint{{.Bits}})(unsafe.Pointer(&({{.Target}})))
-		{{range BitRange .Bits}}
-		buf[{{if $.W.IAdjusted}}i + {{end}}{{Bytes .}} + {{$.W.Offset}}] = byte(v >> {{.}})
+		{{range $pos, $bits := BitRange .Bits .W.BigEndian}}
+		buf[{{if $.W.IAdjusted}}i + {{end}}{{$pos}} + {{$.W.Offset}}] = byte(v >> {{$bits}})
 		{{end}}
 		{{end}}
 	}`))
@@ -36,7 +38,7 @@ func init() {
 		{{if .W.Unsafe}}
 		{{.Target}} = *(*float{{.Bits}})(unsafe.Pointer(&buf[{{if .W.IAdjusted}}i + {{end}}{{.W.Offset}}]))
 		{{else}}
-		v := 0{{range BitRange .Bits}} | (uint{{$.Bits}}(buf[{{if $.W.IAdjusted}}i + {{end}}{{Bytes .}} + {{$.W.Offset}}]) << {{.}}){{end}}
+		v := 0{{range $pos, $bits := BitRange .Bits .W.BigEndian}} | (uint{{$.Bits}}(buf[{{if $.W.IAdjusted}}i + {{end}}{{$pos}} + {{$.W.Offset}}]) << {{$bits}}){{end}}
 		{{.Target}} = *(*float{{.Bits}})(unsafe.Pointer(&v))
 		{{end}}
 	}`))

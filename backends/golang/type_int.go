@@ -1,6 +1,7 @@
 package golang
 
 import (
+	"sort"
 	"text/template"
 
 	"github.com/andyleap/gencode/schema"
@@ -12,18 +13,19 @@ var (
 
 func init() {
 	IntTemps = template.New("IntTemps").Funcs(template.FuncMap{
-		"Bytes": func(bits int) int {
-			return bits / 8
-		},
-		"BitRange": func(bits int) []int {
-			return []int{0, 8, 16, 24, 32, 40, 48, 56, 64}[0:(bits / 8)]
+		"BitRange": func(bits int, bigEndian bool) []int {
+			ar := []int{0, 8, 16, 24, 32, 40, 48, 56, 64}[0:(bits / 8)]
+			if bigEndian {
+				sort.Sort(sort.Reverse(sort.IntSlice(ar)))
+			}
+			return ar
 		},
 	})
 
 	template.Must(IntTemps.New("marshal").Parse(`
 	{
 		{{if .VarInt }}
-		
+
 		t := uint{{.Bits}}({{.Target}})
 		{{if .Signed}}
 		t <<= 1
@@ -38,17 +40,17 @@ func init() {
 		}
 		buf[i + {{.W.Offset}}] = byte(t)
 		i++
-		
+
 		{{else}}
-		
+
 		{{if .W.Unsafe}}
 		*(*{{if not .Signed}}u{{end}}int{{.Bits}})(unsafe.Pointer(&buf[{{if $.W.IAdjusted}}i + {{end}}{{$.W.Offset}}])) = {{.Target}}
 		{{else}}
-		{{range BitRange .Bits}}
-		buf[{{if $.W.IAdjusted}}i + {{end}}{{Bytes .}} + {{$.W.Offset}}] = byte({{$.Target}} >> {{.}})
+		{{range $pos, $bits := BitRange .Bits .W.BigEndian}}
+		buf[{{if $.W.IAdjusted}}i + {{end}}{{$pos}} + {{$.W.Offset}}] = byte({{$.Target}} >> {{$bits}})
 		{{end}}
 		{{end}}
-		
+
 		{{end}}
 	}`))
 	template.Must(IntTemps.New("unmarshal").Parse(`
@@ -70,15 +72,15 @@ func init() {
 		{{else}}
 		{{.Target}} = t
 		{{end}}
-		
+
 		{{else}}
-		
+
 		{{if .W.Unsafe}}
 		{{.Target}} = *(*{{if not .Signed}}u{{end}}int{{.Bits}})(unsafe.Pointer(&buf[{{if $.W.IAdjusted}}i + {{end}}{{$.W.Offset}}]))
 		{{else}}
-		{{$.Target}} = 0{{range BitRange .Bits}} | ({{if not $.Signed}}u{{end}}int{{$.Bits}}(buf[{{if $.W.IAdjusted}}i + {{end}}{{Bytes .}} + {{$.W.Offset}}]) << {{.}}){{end}}
+		{{$.Target}} = 0{{range $pos, $bits := BitRange .Bits .W.BigEndian}} | ({{if not $.Signed}}u{{end}}int{{$.Bits}}(buf[{{if $.W.IAdjusted}}i + {{end}}{{$pos}} + {{$.W.Offset}}]) << {{$bits}}){{end}}
 		{{end}}
-		
+
 		{{end}}
 	}`))
 	template.Must(IntTemps.New("field").Parse(`{{if not .Signed}}u{{end}}int{{.Bits}}`))
