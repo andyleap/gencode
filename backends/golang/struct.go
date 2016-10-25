@@ -159,20 +159,26 @@ func (d *%s) Deserialize(r io.Reader) (error) {
 	sbuf := []byte{0,0,0,0,0,0,0,0,0,0}
 	bs := uint8(0)
 	i := uint64(0)
+	_, err := r.Read(sbuf[i:i+1])
+	if err != nil {
+		return err
+	}
+	size |= uint64(sbuf[i]&0x7F) << bs
+	bs += 7
 	for sbuf[i] & 0x80 == 0x80 {
-		_, err := r.Read(sbuf[i:i+1])
+		i++
+		_, err = r.Read(sbuf[i:i+1])
 		if err != nil {
 			return err
 		}
 		size |= uint64(sbuf[i]&0x7F) << bs
 		bs += 7
-		i++
 	}
+	i++
 	buf := make([]byte, size + i)
 	copy(buf, sbuf[0:i])
 	n := uint64(i)
 	size += i
-	var err error
 	for n < size && err == nil {
 		var nn int
 		nn, err = r.Read(buf[n:])
