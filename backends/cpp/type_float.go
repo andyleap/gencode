@@ -1,4 +1,4 @@
-package golang
+package cpp
 
 import (
 	"text/template"
@@ -21,37 +21,22 @@ func init() {
 	})
 
 	template.Must(FloatTemps.New("marshal").Parse(`
-	{
-		{{if .W.Unsafe}}
-		*(*float{{.Bits}})(unsafe.Pointer(&buf[{{if .W.IAdjusted}}i + {{end}}{{.W.Offset}}])) = {{.Target}}
-		{{else}}
-		v := *(*uint{{.Bits}})(unsafe.Pointer(&({{.Target}})))
-		{{range BitRange .Bits}}
-		buf[{{if $.W.IAdjusted}}i + {{end}}{{Bytes .}} + {{$.W.Offset}}] = byte(v >> {{.}})
-		{{end}}
-		{{end}}
-	}`))
+	memcpy(&buf[{{if .W.IAdjusted}}i + {{end}}{{.W.Offset}}], &{{.Target}}, {{.Bits}}/8);`))
 	template.Must(FloatTemps.New("unmarshal").Parse(`
-	{
-		{{if .W.Unsafe}}
-		{{.Target}} = *(*float{{.Bits}})(unsafe.Pointer(&buf[{{if .W.IAdjusted}}i + {{end}}{{.W.Offset}}]))
-		{{else}}
-		v := 0{{range BitRange .Bits}} | (uint{{$.Bits}}(buf[{{if $.W.IAdjusted}}i + {{end}}{{Bytes .}} + {{$.W.Offset}}]) << {{.}}){{end}}
-		{{.Target}} = *(*float{{.Bits}})(unsafe.Pointer(&v))
-		{{end}}
-	}`))
-	template.Must(FloatTemps.New("field").Parse(`float{{.Bits}}`))
+	memcpy(&{{.Target}}, &buf[{{if .W.IAdjusted}}i + {{end}}{{.W.Offset}}], {{.Bits}}/8);`))
+	template.Must(FloatTemps.New("field").Parse(`{{if .IsFloat}}float{{else}}double{{end}}`))
 }
 
 type FloatTemp struct {
 	*schema.FloatType
-	W      *Walker
-	Target string
+	W       *Walker
+	Target  string
+	IsFloat bool
 }
 
 func (w *Walker) WalkFloatDef(ft *schema.FloatType) (parts *StringBuilder, err error) {
 	parts = &StringBuilder{}
-	err = parts.AddTemplate(FloatTemps, "field", ft)
+	err = parts.AddTemplate(FloatTemps, "field", FloatTemp{ft, w, "", ft.Bits == 32})
 	return
 }
 
@@ -63,14 +48,14 @@ func (w *Walker) WalkFloatSize(ft *schema.FloatType, target string) (parts *Stri
 
 func (w *Walker) WalkFloatMarshal(ft *schema.FloatType, target string) (parts *StringBuilder, err error) {
 	parts = &StringBuilder{}
-	err = parts.AddTemplate(FloatTemps, "marshal", FloatTemp{ft, w, target})
+	err = parts.AddTemplate(FloatTemps, "marshal", FloatTemp{ft, w, target, ft.Bits == 32})
 	w.Offset += ft.Bits / 8
 	return
 }
 
 func (w *Walker) WalkFloatUnmarshal(ft *schema.FloatType, target string) (parts *StringBuilder, err error) {
 	parts = &StringBuilder{}
-	err = parts.AddTemplate(FloatTemps, "unmarshal", FloatTemp{ft, w, target})
+	err = parts.AddTemplate(FloatTemps, "unmarshal", FloatTemp{ft, w, target, ft.Bits == 32})
 	w.Offset += ft.Bits / 8
 	return
 }

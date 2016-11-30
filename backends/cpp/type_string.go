@@ -1,4 +1,4 @@
-package golang
+package cpp
 
 import (
 	"text/template"
@@ -15,25 +15,25 @@ func init() {
 
 	template.Must(StringTemps.New("marshal").Parse(`
 	{
-		l := uint64(len({{.Target}}))
+		uint64_t l = {{.Target}}.length();
 		{{.VarIntCode}}
-		copy(buf[{{if .W.IAdjusted}}i + {{end}}{{.W.Offset}}:], {{.Target}})
-		i += l
+		memcpy(&buf[{{if .W.IAdjusted}}i + {{end}}{{.W.Offset}}], {{.Target}}.c_str(), l);
+		i += l;
 	}`))
 	template.Must(StringTemps.New("unmarshal").Parse(`
 	{
-		l := uint64(0)
+		uint64_t l = 0;
 		{{.VarIntCode}}
-		{{.Target}} = string(buf[{{if .W.IAdjusted}}i + {{end}}{{.W.Offset}}:{{if .W.IAdjusted}}i + {{end}}{{.W.Offset}}+l])
-		i += l
+		{{.Target}}.assign((const char*)&buf[{{if .W.IAdjusted}}i + {{end}}{{.W.Offset}}], l);
+		i += l;
 	}`))
 	template.Must(StringTemps.New("size").Parse(`
 	{
-		l := uint64(len({{.Target}}))
+		uint64_t l = {{.Target}}.length();
 		{{.VarIntCode}}
-		s += l
+		s += l;
 	}`))
-	template.Must(StringTemps.New("field").Parse(`string`))
+	template.Must(StringTemps.New("field").Parse(`std::string`))
 }
 
 type StringTemp struct {

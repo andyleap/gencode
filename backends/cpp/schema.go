@@ -1,4 +1,4 @@
-package golang
+package cpp
 
 import (
 	"fmt"
@@ -13,22 +13,17 @@ type Walker struct {
 	Unsafe    bool
 }
 
-func (w *Walker) WalkSchema(s *schema.Schema, Package string) (parts *StringBuilder, err error) {
+func (w *Walker) WalkSchema(s *schema.Schema, Namespace string) (parts *StringBuilder, err error) {
 	parts = &StringBuilder{}
-	parts.Append(fmt.Sprintf(`package %s
+	parts.Append(fmt.Sprintf(`#pragma once
 
-	import (
-		"unsafe"
-		"io"
-		"time"
-	)
+#include <vector>
+#include <string>
+#include <map>
 
-	var (
-		_ = unsafe.Sizeof(0)
-		_ = io.ReadFull
-		_ = time.Now()
-	)
-	`, Package))
+namespace %s {
+
+`, Namespace))
 	for _, st := range s.Structs {
 		p, err := w.WalkStruct(st)
 		if err != nil {
@@ -36,5 +31,8 @@ func (w *Walker) WalkSchema(s *schema.Schema, Package string) (parts *StringBuil
 		}
 		parts.Join(p)
 	}
+	parts.Append(`
+}
+`)
 	return
 }

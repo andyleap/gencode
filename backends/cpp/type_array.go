@@ -1,7 +1,6 @@
-package golang
+package cpp
 
 import (
-	"fmt"
 	"text/template"
 
 	"github.com/eyrie-io/gencode/schema"
@@ -15,45 +14,38 @@ func init() {
 	ArrayTemps = template.New("ArrayTemps")
 	template.Must(ArrayTemps.New("marshal").Parse(`
 	{
-		for k := range {{.Target}} {
+		for (uint64_t k = 0; k < {{.Count}}; k++) {
 			{{.SubTypeCode}}
-			{{if gt .SubOffset 0 }}
-			i += {{.SubOffset}}
-			{{end}}
+			{{if gt .SubOffset 0 }}i += {{.SubOffset}};{{end}}
 		}
 	}`))
 	template.Must(ArrayTemps.New("unmarshal").Parse(`
 	{
-		for k := range {{.Target}} {
+		for (uint64_t k = 0; k < {{.Count}}; k++) {
 			{{.SubTypeCode}}
-			{{if gt .SubOffset 0 }}
-			i += {{.SubOffset}}
-			{{end}}
+			{{if gt .SubOffset 0 }}i += {{.SubOffset}};{{end}}
 		}
 	}`))
 	template.Must(ArrayTemps.New("bytemarshal").Parse(`
 	{
-		copy(buf[{{if $.W.IAdjusted}}i + {{end}}{{$.W.Offset}}:], {{.Target}}[:])
-		i += {{.Count}}
+		memcpy(&buf[{{if $.W.IAdjusted}}i + {{end}}{{$.W.Offset}}], &{{.Target}}[0], {{.Count}});
+		i += {{.Count}};
 	}`))
 	template.Must(ArrayTemps.New("byteunmarshal").Parse(`
 	{
-		copy({{.Target}}[:], buf[{{if $.W.IAdjusted}}i + {{end}}{{$.W.Offset}}:])
-		i += {{.Count}}
+		memcpy(&{{.Target}}[0], &buf[{{if $.W.IAdjusted}}i + {{end}}{{$.W.Offset}}], {{.Count}});
+		i += {{.Count}};
 	}`))
 	template.Must(ArrayTemps.New("size").Parse(`
 	{
-		for k := range {{.Target}} {
-			_ = k  // make compiler happy in case k is unused
+		for (uint64_t k = 0; k < {{.Count}}; k++) {
 			{{.SubTypeCode}}
-			{{if gt .SubOffset 0 }}
-			s += {{.SubOffset}}
-			{{end}}
+			{{if gt .SubOffset 0 }}s += {{.SubOffset}};{{end}}
 		}
 	}`))
 	template.Must(ArrayTemps.New("bytesize").Parse(`
 	{
-		s += {{.Count}}
+		s += {{.Count}};
 	}`))
 	template.Must(ArrayTemps.New("field").Parse(`[{{.Count}}]`))
 }
@@ -65,17 +57,6 @@ type ArrayTemp struct {
 	Target      string
 	SubTypeCode string
 	SubField    string
-}
-
-func (w *Walker) WalkArrayDef(at *schema.ArrayType) (parts *StringBuilder, err error) {
-	parts = &StringBuilder{}
-	parts.Append(fmt.Sprintf("[%d]", at.Count))
-	sub, err := w.WalkTypeDef(at.SubType)
-	if err != nil {
-		return nil, err
-	}
-	parts.Join(sub)
-	return
 }
 
 func (w *Walker) WalkArraySize(at *schema.ArrayType, target string) (parts *StringBuilder, err error) {

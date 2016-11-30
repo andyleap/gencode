@@ -1,4 +1,4 @@
-package golang
+package cpp
 
 import (
 	"text/template"
@@ -15,15 +15,15 @@ func init() {
 
 	template.Must(BoolTemps.New("marshal").Parse(`
 	{
-		if {{.Target}} {
-			buf[{{if .W.IAdjusted}}i + {{end}}{{.W.Offset}}] = 1
+		if ({{.Target}}) {
+			buf[{{if .W.IAdjusted}}i + {{end}}{{.W.Offset}}] = 1;
 		} else {
-			buf[{{if .W.IAdjusted}}i + {{end}}{{.W.Offset}}] = 0
+			buf[{{if .W.IAdjusted}}i + {{end}}{{.W.Offset}}] = 0;
 		}
 	}`))
 	template.Must(BoolTemps.New("unmarshal").Parse(`
 	{
-		{{.Target}} = buf[{{if .W.IAdjusted}}i + {{end}}{{.W.Offset}}] == 1
+		{{.Target}} = buf[{{if .W.IAdjusted}}i + {{end}}{{.W.Offset}}] == 1;
 	}`))
 }
 

@@ -31,7 +31,7 @@ type Ints struct {
 	Uint64  uint64
 }
 
-func (d *Ints) Size() (s uint64) {
+func (d *Ints) MarshalSize() (s uint64) {
 
 	{
 
@@ -133,7 +133,7 @@ func (d *Ints) Size() (s uint64) {
 	return
 }
 func (d *Ints) Marshal(buf []byte) ([]byte, error) {
-	size := d.Size()
+	size := d.MarshalSize()
 	{
 		if uint64(cap(buf)) >= size {
 			buf = buf[:size]

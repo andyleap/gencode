@@ -1,4 +1,4 @@
-package golang
+package cpp
 
 import (
 	"text/template"
@@ -31,7 +31,7 @@ type ByteTemp struct {
 
 func (w *Walker) WalkByteDef(bt *schema.ByteType) (parts *StringBuilder, err error) {
 	parts = &StringBuilder{}
-	parts.Append("byte")
+	parts.Append("uint8_t")
 	return
 }
 

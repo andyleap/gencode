@@ -1,4 +1,4 @@
-package golang
+package cpp
 
 import (
 	"text/template"
@@ -22,89 +22,63 @@ func init() {
 
 	template.Must(IntTemps.New("marshal").Parse(`
 	{
-		{{if .VarInt }}
-
-		t := uint{{.Bits}}({{.Target}})
-		{{if .Signed}}
-		t <<= 1
-   		if {{.Target}} < 0 {
-   			t = ^t
-   		}
-		{{end}}
-		for t >= 0x80 {
-			buf[i + {{.W.Offset}}] = byte(t) | 0x80
-			t >>= 7
-			i++
+		{{if .VarInt}}uint{{.Bits}}_t t = {{.Target}};
+		{{if .Signed}}t <<= 1;
+		if ({{.Target}} < 0) { t = ^t; }{{end}}
+   		while (t >= 0x80) {
+			buf[i + {{.W.Offset}}] = uint8_t(t) | 0x80;
+			t >>= 7;
+			i++;
 		}
-		buf[i + {{.W.Offset}}] = byte(t)
-		i++
-
-		{{else}}
-
-		{{if .W.Unsafe}}
-		*(*{{if not .Signed}}u{{end}}int{{.Bits}})(unsafe.Pointer(&buf[{{if $.W.IAdjusted}}i + {{end}}{{$.W.Offset}}])) = {{.Target}}
-		{{else}}
-		{{range BitRange .Bits}}
-		buf[{{if $.W.IAdjusted}}i + {{end}}{{Bytes .}} + {{$.W.Offset}}] = byte({{$.Target}} >> {{.}})
-		{{end}}
-		{{end}}
-
-		{{end}}
+		buf[i + {{.W.Offset}}] = uint8_t(t);
+		i++;{{else}}memcpy(&buf[{{if $.W.IAdjusted}}i + {{end}}{{$.W.Offset}}], &{{.Target}}, {{.Bits}}/8);{{end}}
 	}`))
 	template.Must(IntTemps.New("unmarshal").Parse(`
 	{
 		{{if .VarInt}}
-		bs := uint8(7)
-		t := uint{{.Bits}}(buf[i + {{.W.Offset}}] & 0x7F)
-		for buf[i + {{.W.Offset}}] & 0x80 == 0x80 {
-			i++
-			t |= uint{{.Bits}}(buf[i + {{.W.Offset}}]&0x7F) << bs
-			bs += 7
+		uint8_t bs = 7;
+		uint{{.Bits}}_t t = buf[i + {{.W.Offset}}] & 0x7F;
+		while ((buf[i + {{.W.Offset}}] & 0x80) == 0x80) {
+			i++;
+			t |= ((uint{{.Bits}}_t)buf[i + {{.W.Offset}}] & 0x7F) << bs;
+			bs += 7;
 		}
-		i++
+		i++;
 		{{if .Signed}}
-		{{.Target}} = int{{.Bits}}(t >> 1)
-		if t&1 != 0 {
-			{{.Target}} = ^{{.Target}}
+		{{.Target}} = (int{{.Bits}}_t)(t >> 1);
+		if (t&1 != 0) {
+			{{.Target}} = ^{{.Target}};
 		}
 		{{else}}
-		{{.Target}} = t
+		{{.Target}} = t;
 		{{end}}
-
 		{{else}}
-
-		{{if .W.Unsafe}}
-		{{.Target}} = *(*{{if not .Signed}}u{{end}}int{{.Bits}})(unsafe.Pointer(&buf[{{if $.W.IAdjusted}}i + {{end}}{{$.W.Offset}}]))
-		{{else}}
-		{{$.Target}} = 0{{range BitRange .Bits}} | ({{if not $.Signed}}u{{end}}int{{$.Bits}}(buf[{{if $.W.IAdjusted}}i + {{end}}{{Bytes .}} + {{$.W.Offset}}]) << {{.}}){{end}}
-		{{end}}
-
+		memcpy(&{{.Target}}, &buf[{{if $.W.IAdjusted}}i + {{end}}{{$.W.Offset}}], {{.Bits}}/8);
 		{{end}}
 	}`))
-	template.Must(IntTemps.New("field").Parse(`{{if not .Signed}}u{{end}}int{{.Bits}}`))
+	template.Must(IntTemps.New("field").Parse(`{{if not .Signed}}u{{end}}int{{.Bits}}_t`))
 	template.Must(IntTemps.New("size").Parse(`
 	{
 		{{if .VarInt}}
 		{{if .Signed}}
-		t := uint{{.Bits}}({{.Target}})
-		t <<= 1
-		if {{.Target}} < 0 {
-			t = ^t
+		uint{{.Bits}}_t t := {{.Target}};
+		t <<= 1;
+		if ({{.Target}}) < 0 {
+			t = ^t;
 		}
-		for t >= 0x80 {
-			t >>= 7
-			s++
+		while (t >= 0x80) {
+			t >>= 7;
+			s++;
 		}
-		s++
+		s++;
 		{{else}}
-		t := {{.Target}}
-		for t >= 0x80 {
-			t >>= 7
-			s++
+		uint{{.Bits}}_t t = {{.Target}};
+		while (t >= 0x80) {
+			t >>= 7;
+			s++;
 		}
-		s++
+		s++;
 		{{end}}
-		s += {{.Bits}}/8
 		{{end}}
 	}`))
 }

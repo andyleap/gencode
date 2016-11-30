@@ -1,4 +1,4 @@
-package golang
+package cpp
 
 import (
 	"text/template"
@@ -15,23 +15,17 @@ func init() {
 
 	template.Must(StructTemps.New("marshal").Parse(`
 	{
-		nbuf, err := {{.Target}}.Marshal(buf[{{if .W.IAdjusted}}i + {{end}}{{.W.Offset}}:])
-		if err != nil {
-			return nil, err
-		}
-		i += uint64(len(nbuf))
+		uint64_t nbuf = {{.Target}}.Marshal(&buf[{{if .W.IAdjusted}}i + {{end}}{{.W.Offset}}]);
+		i += nbuf;
 	}`))
 	template.Must(StructTemps.New("unmarshal").Parse(`
 	{
-		ni, err := {{.Target}}.Unmarshal(buf[{{if .W.IAdjusted}}i + {{end}}{{.W.Offset}}:])
-		if err != nil {
-			return 0, err
-		}
-		i += ni
+		uint64_t ni = {{.Target}}.Unmarshal(&buf[{{if .W.IAdjusted}}i + {{end}}{{.W.Offset}}]);
+		i += ni;
 	}`))
 	template.Must(StructTemps.New("size").Parse(`
 	{
-		s += {{.Target}}.MarshalSize()
+		s += {{.Target}}.MarshalSize();
 	}`))
 	template.Must(StructTemps.New("field").Parse(`{{.Struct}}`))
 }

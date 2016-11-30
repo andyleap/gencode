@@ -27,8 +27,9 @@ type ResolveType interface {
 }
 
 type Field struct {
-	Name string
-	Type Type
+	Name      string
+	Type      Type
+	Attribute string
 }
 
 type Struct struct {
@@ -142,10 +143,32 @@ func (p *PointerType) Resolve(s *Schema) error {
 
 type SliceType struct {
 	SubType Type
+	Depth   int
 }
 
 func (st *SliceType) Resolve(s *Schema) error {
 	if rt, ok := st.SubType.(ResolveType); ok {
+		err := rt.Resolve(s)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+type MapType struct {
+	KeySubType   Type
+	ValueSubType Type
+}
+
+func (st *MapType) Resolve(s *Schema) error {
+	if rt, ok := st.KeySubType.(ResolveType); ok {
+		err := rt.Resolve(s)
+		if err != nil {
+			return err
+		}
+	}
+	if rt, ok := st.ValueSubType.(ResolveType); ok {
 		err := rt.Resolve(s)
 		if err != nil {
 			return err

@@ -3,7 +3,7 @@ package golang
 import (
 	"text/template"
 
-	"github.com/andyleap/gencode/schema"
+	"github.com/eyrie-io/gencode/schema"
 )
 
 var (
