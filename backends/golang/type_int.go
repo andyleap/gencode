@@ -48,7 +48,7 @@ func init() {
 		buf[{{if $.W.IAdjusted}}i + {{end}}{{Bytes .}} + {{$.W.Offset}}] = byte({{$.Target}} >> {{.}})
 		{{end}}
 		{{end}}
-
+		i += {{.Bits}}/8
 		{{end}}
 	}`))
 	template.Must(IntTemps.New("unmarshal").Parse(`
@@ -78,7 +78,7 @@ func init() {
 		{{else}}
 		{{$.Target}} = 0{{range BitRange .Bits}} | ({{if not $.Signed}}u{{end}}int{{$.Bits}}(buf[{{if $.W.IAdjusted}}i + {{end}}{{Bytes .}} + {{$.W.Offset}}]) << {{.}}){{end}}
 		{{end}}
-
+		i += {{.Bits}}/8
 		{{end}}
 	}`))
 	template.Must(IntTemps.New("field").Parse(`{{if not .Signed}}u{{end}}int{{.Bits}}`))

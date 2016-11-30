@@ -31,7 +31,11 @@ func init() {
 			i++;
 		}
 		buf[i + {{.W.Offset}}] = uint8_t(t);
-		i++;{{else}}memcpy(&buf[{{if $.W.IAdjusted}}i + {{end}}{{$.W.Offset}}], &{{.Target}}, {{.Bits}}/8);{{end}}
+		i++;
+		{{else}}
+		memcpy(&buf[{{if $.W.IAdjusted}}i + {{end}}{{$.W.Offset}}], &{{.Target}}, {{.Bits}}/8);
+		i += {{.Bits}}/8;
+		{{end}}
 	}`))
 	template.Must(IntTemps.New("unmarshal").Parse(`
 	{
@@ -54,6 +58,7 @@ func init() {
 		{{end}}
 		{{else}}
 		memcpy(&{{.Target}}, &buf[{{if $.W.IAdjusted}}i + {{end}}{{$.W.Offset}}], {{.Bits}}/8);
+		i += {{.Bits}}/8;
 		{{end}}
 	}`))
 	template.Must(IntTemps.New("field").Parse(`{{if not .Signed}}u{{end}}int{{.Bits}}_t`))
@@ -79,6 +84,8 @@ func init() {
 		}
 		s++;
 		{{end}}
+		{{else}}
+		s += {{.Bits}}/8;
 		{{end}}
 	}`))
 }
