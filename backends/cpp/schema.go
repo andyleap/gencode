@@ -20,6 +20,7 @@ func (w *Walker) WalkSchema(s *schema.Schema, Namespace string) (parts *StringBu
 #include <vector>
 #include <string>
 #include <map>
+#include <stdint.h>
 
 namespace %s {
 

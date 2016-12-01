@@ -12,7 +12,7 @@ func (w *Walker) WalkStruct(s *schema.Struct) (parts *StringBuilder, err error) 
 		return
 	}
 	parts = &StringBuilder{}
-	parts.Append(fmt.Sprintf(`class %s {
+	parts.Append(fmt.Sprintf(`class C%s {
 public:
 `, s.Name))
 	for _, f := range s.Fields {
@@ -26,12 +26,32 @@ public:
 	}
 	parts.Append(fmt.Sprintf(`
 public:
+	~C%s();
 	uint64_t MarshalSize();
 	uint64_t Marshal(uint8_t* buf);
 	uint64_t Unmarshal(uint8_t* buf);
 };
 
-uint64_t %s::MarshalSize() {
+C%s::~C%s() {`, s.Name, s.Name, s.Name))
+	for _, f := range s.Fields {
+		switch t := f.Type.(type) {
+		case *schema.PointerType:
+			parts.Append(fmt.Sprintf(`	delete this->%s;"`, s.Name))
+		case *schema.SliceType:
+			pt, ok := t.SubType.(*schema.PointerType)
+			if ok {
+				dt := pt.SubType.(*schema.DeferType)
+				parts.Append(fmt.Sprintf(`
+	for (std::vector<C%s*>::iterator i = %s.begin(); i != %s.end(); i++) {
+		delete (*i);
+	}`, dt.Defer, f.Name, f.Name))
+			}
+		}
+	}
+	parts.Append(fmt.Sprintf(`
+}
+
+uint64_t C%s::MarshalSize() {
 	uint64_t s = 0;
 `, s.Name))
 	for _, f := range s.Fields {
@@ -52,7 +72,7 @@ uint64_t %s::MarshalSize() {
 	return s;
 }
 
-uint64_t %s::Marshal(uint8_t* buf) {`, s.Name))
+uint64_t C%s::Marshal(uint8_t* buf) {`, s.Name))
 	parts.Append(`
 	uint64_t size = this->MarshalSize();`)
 	parts.Append(`
@@ -69,7 +89,7 @@ uint64_t %s::Marshal(uint8_t* buf) {`, s.Name))
 	return i+%d;
 }
 
-uint64_t %s::Unmarshal(uint8_t* buf) {
+uint64_t C%s::Unmarshal(uint8_t* buf) {
 	uint64_t i = 0;
 	`, w.Offset, s.Name))
 	w.Offset = 0

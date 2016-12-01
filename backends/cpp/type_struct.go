@@ -27,7 +27,7 @@ func init() {
 	{
 		s += {{.Target}}.MarshalSize();
 	}`))
-	template.Must(StructTemps.New("field").Parse(`{{.Struct}}`))
+	template.Must(StructTemps.New("field").Parse(`C{{.Struct}}`))
 }
 
 type StructTemp struct {
