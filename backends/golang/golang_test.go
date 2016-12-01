@@ -10,7 +10,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/andyleap/gencode/schema"
+	"github.com/eyrie-io/gencode/schema"
 	"github.com/kr/pretty"
 )
 
@@ -29,7 +29,7 @@ func TestGolangBackend(t *testing.T) {
 	} {
 		inputF := filepath.Join("./testdata", tc)
 		outputF := filepath.Join(dir, tc+".go")
-		goldenF := inputF+".golden.go"
+		goldenF := inputF + ".golden.go"
 
 		in, err := ioutil.ReadFile(inputF)
 		if err != nil {

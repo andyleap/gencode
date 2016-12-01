@@ -1,4 +1,4 @@
-package golang
+package cpp
 
 import (
 	"text/template"
@@ -22,85 +22,70 @@ func init() {
 
 	template.Must(IntTemps.New("marshal").Parse(`
 	{
-		{{if .VarInt }}
-		t := uint{{.Bits}}({{.Target}})
-		{{if .Signed}}
-		t <<= 1
-   		if {{.Target}} < 0 {
-   			t = ^t
-   		}
-		{{end}}
-		for t >= 0x80 {
-			buf[i] = byte(t) | 0x80
-			t >>= 7
-			i++
+		{{if .VarInt}}uint{{.Bits}}_t t = {{.Target}};
+		{{if .Signed}}t <<= 1;
+		if ({{.Target}} < 0) { t = ^t; }{{end}}
+   		while (t >= 0x80) {
+			buf[i] = uint8_t(t) | 0x80;
+			t >>= 7;
+			i++;
 		}
-		buf[i] = byte(t)
-		i++
+		buf[i] = uint8_t(t);
+		i++;
 		{{else}}
-		{{if .W.Unsafe}}
-		*(*{{if not .Signed}}u{{end}}int{{.Bits}})(unsafe.Pointer(&buf[i])) = {{.Target}}
-		{{else}}
-		{{range BitRange .Bits}}
-		buf[i + {{Bytes .}}] = byte({{$.Target}} >> {{.}})
-		{{end}}
-		{{end}}
-		i += {{.Bits}}/8
+		memcpy(&buf[i], &{{.Target}}, {{.Bits}}/8);
+		i += {{.Bits}}/8;
 		{{end}}
 	}`))
 	template.Must(IntTemps.New("unmarshal").Parse(`
 	{
 		{{if .VarInt}}
-		bs := uint8(7)
-		t := uint{{.Bits}}(buf[i] & 0x7F)
-		for buf[i] & 0x80 == 0x80 {
-			i++
-			t |= uint{{.Bits}}(buf[i]&0x7F) << bs
-			bs += 7
+		uint8_t bs = 7;
+		uint{{.Bits}}_t t = buf[i] & 0x7F;
+		while ((buf[i] & 0x80) == 0x80) {
+			i++;
+			t |= ((uint{{.Bits}}_t)buf[i] & 0x7F) << bs;
+			bs += 7;
 		}
-		i++
+		i++;
 		{{if .Signed}}
-		{{.Target}} = int{{.Bits}}(t >> 1)
-		if t&1 != 0 {
-			{{.Target}} = ^{{.Target}}
+		{{.Target}} = (int{{.Bits}}_t)(t >> 1);
+		if (t&1 != 0) {
+			{{.Target}} = ^{{.Target}};
 		}
 		{{else}}
-		{{.Target}} = t
+		{{.Target}} = t;
 		{{end}}
 		{{else}}
-		{{if .W.Unsafe}}
-		{{.Target}} = *(*{{if not .Signed}}u{{end}}int{{.Bits}})(unsafe.Pointer(&buf[i]))
-		{{else}}
-		{{$.Target}} = 0{{range BitRange .Bits}} | ({{if not $.Signed}}u{{end}}int{{$.Bits}}(buf[i + {{Bytes .}}]) << {{.}}){{end}}
-		{{end}}
-		i += {{.Bits}}/8
+		memcpy(&{{.Target}}, &buf[i], {{.Bits}}/8);
+		i += {{.Bits}}/8;
 		{{end}}
 	}`))
-	template.Must(IntTemps.New("field").Parse(`{{if not .Signed}}u{{end}}int{{.Bits}}`))
+	template.Must(IntTemps.New("field").Parse(`{{if not .Signed}}u{{end}}int{{.Bits}}_t`))
 	template.Must(IntTemps.New("size").Parse(`
 	{
 		{{if .VarInt}}
 		{{if .Signed}}
-		t := uint{{.Bits}}({{.Target}})
-		t <<= 1
-		if {{.Target}} < 0 {
-			t = ^t
+		uint{{.Bits}}_t t := {{.Target}};
+		t <<= 1;
+		if ({{.Target}}) < 0 {
+			t = ^t;
 		}
-		for t >= 0x80 {
-			t >>= 7
-			s++
+		while (t >= 0x80) {
+			t >>= 7;
+			s++;
 		}
-		s++
+		s++;
 		{{else}}
-		t := {{.Target}}
-		for t >= 0x80 {
-			t >>= 7
-			s++
+		uint{{.Bits}}_t t = {{.Target}};
+		while (t >= 0x80) {
+			t >>= 7;
+			s++;
 		}
-		s++
+		s++;
 		{{end}}
 		{{else}}
-		s += {{.Bits}}/8
+		s += {{.Bits}}/8;
 		{{end}}
 	}`))
 }

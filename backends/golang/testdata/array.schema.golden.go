@@ -19,7 +19,7 @@ type Array struct {
 	D []Nested
 }
 
-func (d *Array) Size() (s uint64) {
+func (d *Array) MarshalSize() (s uint64) {
 
 	{
 		for k := range d.A {
@@ -34,7 +34,7 @@ func (d *Array) Size() (s uint64) {
 			_ = k // make compiler happy in case k is unused
 
 			{
-				s += d.B[k].Size()
+				s += d.B[k].MarshalSize()
 			}
 
 		}
@@ -73,7 +73,7 @@ func (d *Array) Size() (s uint64) {
 		for k := range d.D {
 
 			{
-				s += d.D[k].Size()
+				s += d.D[k].MarshalSize()
 			}
 
 		}
@@ -82,7 +82,7 @@ func (d *Array) Size() (s uint64) {
 	return
 }
 func (d *Array) Marshal(buf []byte) ([]byte, error) {
-	size := d.Size()
+	size := d.MarshalSize()
 	{
 		if uint64(cap(buf)) >= size {
 			buf = buf[:size]
@@ -294,7 +294,7 @@ type Nested struct {
 	B []string
 }
 
-func (d *Nested) Size() (s uint64) {
+func (d *Nested) MarshalSize() (s uint64) {
 
 	{
 		for k := range d.A {
@@ -356,7 +356,7 @@ func (d *Nested) Size() (s uint64) {
 	return
 }
 func (d *Nested) Marshal(buf []byte) ([]byte, error) {
-	size := d.Size()
+	size := d.MarshalSize()
 	{
 		if uint64(cap(buf)) >= size {
 			buf = buf[:size]

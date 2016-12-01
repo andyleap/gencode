@@ -1,4 +1,4 @@
-package golang
+package cpp
 
 import (
 	"text/template"
@@ -15,21 +15,21 @@ func init() {
 
 	template.Must(BoolTemps.New("marshal").Parse(`
 	{
-		if {{.Target}} {
-			buf[i] = 1
+		if ({{.Target}}) {
+			buf[i] = 1;
 		} else {
-			buf[i] = 0
+			buf[i] = 0;
 		}
-		i++
+		i++;
 	}`))
 	template.Must(BoolTemps.New("unmarshal").Parse(`
 	{
-		{{.Target}} = buf[i] == 1
-		i++
+		{{.Target}} = buf[i] == 1;
+		i++;
 	}`))
 	template.Must(BoolTemps.New("size").Parse(`
 	{
-		s++
+		s++;
 	}`))
 }
 

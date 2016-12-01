@@ -1,4 +1,4 @@
-package golang
+package cpp
 
 import (
 	"fmt"
@@ -8,8 +8,6 @@ import (
 
 func (w *Walker) WalkTypeDef(t schema.Type) (*StringBuilder, error) {
 	switch tt := t.(type) {
-	case *schema.ArrayType:
-		return w.WalkArrayDef(tt)
 	case *schema.BoolType:
 		return w.WalkBoolDef(tt)
 	case *schema.ByteType:

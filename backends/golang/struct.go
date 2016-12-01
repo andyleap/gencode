@@ -3,7 +3,7 @@ package golang
 import (
 	"fmt"
 
-	"github.com/andyleap/gencode/schema"
+	"github.com/eyrie-io/gencode/schema"
 )
 
 func (w *Walker) WalkStruct(s *schema.Struct) (parts *StringBuilder, err error) {
@@ -26,13 +26,13 @@ func (w *Walker) WalkStruct(s *schema.Struct) (parts *StringBuilder, err error) 
 	}
 	if !s.Framed {
 		parts.Append(fmt.Sprintf(`}
-	
-func (d *%s) Size() (s uint64) {
+
+func (d *%s) MarshalSize() (s uint64) {
 	`, s.Name))
 	} else {
 		parts.Append(fmt.Sprintf(`}
-	
-func (d *%s) FramedSize() (s uint64, us uint64) {
+
+func (d *%s) MarshalFramedSize() (s uint64, us uint64) {
 	`, s.Name))
 	}
 	for _, f := range s.Fields {
@@ -42,12 +42,6 @@ func (d *%s) FramedSize() (s uint64, us uint64) {
 		}
 		parts.Join(p)
 	}
-	if w.Offset > 0 {
-		parts.Append(fmt.Sprintf(`
-	s += %d`, w.Offset))
-		w.Offset = 0
-	}
-	w.IAdjusted = false
 	if s.Framed {
 		intcode, err := w.WalkIntSize(intHandler, "l")
 		if err != nil {
@@ -60,13 +54,13 @@ func (d *%s) FramedSize() (s uint64, us uint64) {
 		parts.Join(intcode)
 	}
 	parts.Append(fmt.Sprintf(`
-	return 
+	return
 }`))
 
 	if s.Framed {
 		parts.Append(fmt.Sprintf(`
-func (d *%s) Size() (s uint64) {
-	s, _ = d.FramedSize()
+func (d *%s) MarshalSize() (s uint64) {
+	s, _ = d.MarshalFramedSize()
 	return
 }
 `, s.Name))
@@ -76,10 +70,10 @@ func (d *%s) Size() (s uint64) {
 func (d *%s) Marshal(buf []byte) ([]byte, error) {`, s.Name))
 	if s.Framed {
 		parts.Append(`
-	size, usize := d.FramedSize()`)
+	size, usize := d.MarshalFramedSize()`)
 	} else {
 		parts.Append(`
-	size := d.Size()`)
+	size := d.MarshalSize()`)
 	}
 	parts.Append(`
 	{
@@ -106,13 +100,12 @@ func (d *%s) Marshal(buf []byte) ([]byte, error) {`, s.Name))
 		parts.Join(p)
 	}
 	parts.Append(fmt.Sprintf(`
-	return buf[:i+%d], nil
+	return buf[:i], nil
 }
-	
+
 func (d *%s) Unmarshal(buf []byte) (uint64, error) {
 	i := uint64(0)
-	`, w.Offset, s.Name))
-	w.Offset = 0
+	`, s.Name))
 	if s.Framed {
 		parts.Append(`usize := uint64(0)
 	`)
@@ -134,11 +127,9 @@ func (d *%s) Unmarshal(buf []byte) (uint64, error) {
 		parts.Join(p)
 	}
 	parts.Append(fmt.Sprintf(`
-	return i + %d, nil
+	return i, nil
 }
-`, w.Offset))
-	w.Offset = 0
-	w.IAdjusted = false
+`))
 	if s.Framed {
 		parts.Append(fmt.Sprintf(`
 func (d *%s) Serialize(w io.Writer) (error) {
@@ -206,6 +197,9 @@ func (w *Walker) WalkFieldDef(s *schema.Field) (parts *StringBuilder, err error)
 		return nil, err
 	}
 	parts.Join(subp)
+	if s.Attribute != "" {
+		parts.Append(fmt.Sprintf(` %s`, s.Attribute))
+	}
 	return
 }
 

@@ -4,7 +4,7 @@ import (
 	"flag"
 	"go/format"
 
-	"github.com/andyleap/gencode/schema"
+	"github.com/eyrie-io/gencode/schema"
 )
 
 type GolangBackend struct {

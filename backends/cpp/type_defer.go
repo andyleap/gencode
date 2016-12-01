@@ -1,4 +1,4 @@
-package golang
+package cpp
 
 import "github.com/eyrie-io/gencode/schema"
 

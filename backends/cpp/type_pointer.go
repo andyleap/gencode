@@ -1,6 +1,7 @@
-package golang
+package cpp
 
 import (
+	"fmt"
 	"text/template"
 
 	"github.com/eyrie-io/gencode/schema"
@@ -14,32 +15,32 @@ func init() {
 	PointerTemps = template.New("PointerTemps")
 	template.Must(PointerTemps.New("marshal").Parse(`
 	{
-		if {{.Target}} == nil {
-			buf[i] = 0
-			i++
+		if ({{.Target}} == NULL) {
+			buf[i] = 0;
+			i++;
 		} else {
-			buf[i] = 1
-			i++
+			buf[i] = 1;
+			i++;
 			{{.SubTypeCode}}
 		}
 	}`))
 	template.Must(PointerTemps.New("unmarshal").Parse(`
 	{
-		if buf[i] == 1 {
-			if {{.Target}} == nil {
-				{{.Target}} = new({{.SubField}})
+		if (buf[i] == 1) {
+			i++;
+			if ({{.Target}} == NULL) {
+				{{.Target}} = new class {{.SubField}}();
 			}
-			i++
 			{{.SubTypeCode}}
 		} else {
-			{{.Target}} = nil
-			i++
+			i++;
+			{{.Target}} = NULL;
 		}
 	}`))
 	template.Must(PointerTemps.New("size").Parse(`
 	{
-		s++
-		if {{.Target}} != nil {
+		s++;
+		if ({{.Target}} != NULL) {
 			{{.SubTypeCode}}
 		}
 	}`))
@@ -56,13 +57,12 @@ type PointerTemp struct {
 }
 
 func (w *Walker) WalkPointerDef(pt *schema.PointerType) (parts *StringBuilder, err error) {
-	parts = &StringBuilder{}
-	parts.Append("*")
 	sub, err := w.WalkTypeDef(pt.SubType)
 	if err != nil {
 		return nil, err
 	}
-	parts.Join(sub)
+	parts = &StringBuilder{}
+	parts.Append(fmt.Sprintf("%s*", sub.String()))
 	return
 }
 

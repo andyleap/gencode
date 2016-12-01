@@ -1,4 +1,4 @@
-package golang
+package cpp
 
 import (
 	"text/template"
@@ -16,16 +16,16 @@ func init() {
 	template.Must(ByteTemps.New("marshal").Parse(`
 	{
 		buf[i] = {{.Target}};
-		i++
+		i++;
 	}`))
 	template.Must(ByteTemps.New("unmarshal").Parse(`
 	{
 		{{.Target}} = buf[i];
-		i++
+		i++;
 	}`))
 	template.Must(ByteTemps.New("size").Parse(`
 	{
-		s++
+		s++;
 	}`))
 }
 
@@ -37,7 +37,7 @@ type ByteTemp struct {
 
 func (w *Walker) WalkByteDef(bt *schema.ByteType) (parts *StringBuilder, err error) {
 	parts = &StringBuilder{}
-	parts.Append("byte")
+	parts.Append("uint8_t")
 	return
 }
 

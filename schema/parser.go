@@ -13,6 +13,11 @@ func MakeGrammar() *Grammar {
 	RWS := Ignore(Mult(1, 0, Set("\t\n\f\r ")))
 	NL := Ignore(And(Mult(0, 0, Set("\t\f\r ")), Mult(1, 0, And(Lit("\n"), WS))))
 
+	gAttribute := And(Set("`"), Mult(0, 0, Or(Letter, Digit, Set("\":,"))), Set("`"))
+	gAttribute.Node(func(m Match) (Match, error) {
+		return String(m), nil
+	})
+
 	gIdentifier := And(Letter, Mult(0, 0, Or(Letter, Digit)))
 	gIdentifier.Node(func(m Match) (Match, error) {
 		return String(m), nil
@@ -97,10 +102,27 @@ func MakeGrammar() *Grammar {
 		return u, nil
 	})
 
-	gSlice := And(Lit("[]"), Require(Tag("SubType", gType)))
+	gSlice := And(Lit("[]"), Mult(0, 0, Tag("Brackets", Lit("[]"))), Require(Tag("SubType", gType)))
 	gSlice.Node(func(m Match) (Match, error) {
-		return &SliceType{
+		st := &SliceType{
 			SubType: GetTag(m, "SubType").(Type),
+		}
+		n := len(GetTags(m, "Brackets"))
+		for n > 0 {
+			st = &SliceType{
+				SubType: st,
+				Depth:   st.Depth + 1,
+			}
+			n--
+		}
+		return st, nil
+	})
+
+	gMap := And(Lit("map["), Require(Tag("KeySubType", gType)), Lit("]"), Require(Tag("ValueSubType", gType)))
+	gMap.Node(func(m Match) (Match, error) {
+		return &MapType{
+			KeySubType:   GetTag(m, "KeySubType").(Type),
+			ValueSubType: GetTag(m, "ValueSubType").(Type),
 		}, nil
 	})
 
@@ -123,13 +145,17 @@ func MakeGrammar() *Grammar {
 		}, nil
 	})
 
-	gType.Set(Or(gSlice, gArray, gPointer, gIntField, gByteField, gBoolField, gStringField, gTimeField, gFloatField, gUnion, gDeferField))
+	gType.Set(Or(gMap, gSlice, gArray, gPointer, gIntField, gByteField, gBoolField, gStringField, gTimeField, gFloatField, gUnion, gDeferField))
 
-	gField := And(Tag("Name", gIdentifier), Require(RWS, Tag("Type", gType), NL))
+	gField := And(Tag("Name", gIdentifier), Require(RWS, Tag("Type", gType)), Optional(And(RWS, Tag("Attribute", gAttribute))), Require(NL))
 	gField.Node(func(m Match) (Match, error) {
 		f := &Field{
 			Name: GetTag(m, "Name").(string),
 			Type: GetTag(m, "Type").(Type),
+		}
+		a := GetTag(m, "Attribute")
+		if a != nil {
+			f.Attribute = a.(string)
 		}
 		return TagMatch("Field", f), nil
 	})
