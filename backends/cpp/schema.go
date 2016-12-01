@@ -7,10 +7,6 @@ import (
 )
 
 type Walker struct {
-	Needs     []string
-	Offset    int
-	IAdjusted bool
-	Unsafe    bool
 }
 
 func (w *Walker) WalkSchema(s *schema.Schema, Namespace string) (parts *StringBuilder, err error) {

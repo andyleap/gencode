@@ -30,10 +30,6 @@ func (w *Walker) WalkTypeDef(t schema.Type) (*StringBuilder, error) {
 		return w.WalkStringDef(tt)
 	case *schema.StructType:
 		return w.WalkStructDef(tt)
-	case *schema.TimeType:
-		return w.WalkTimeDef(tt)
-	case *schema.UnionType:
-		return w.WalkUnionDef(tt)
 	}
 	return nil, fmt.Errorf("No such type %T", t)
 }
@@ -62,10 +58,6 @@ func (w *Walker) WalkTypeSize(t schema.Type, target string) (*StringBuilder, err
 		return w.WalkStringSize(tt, target)
 	case *schema.StructType:
 		return w.WalkStructSize(tt, target)
-	case *schema.TimeType:
-		return w.WalkTimeSize(tt, target)
-	case *schema.UnionType:
-		return w.WalkUnionSize(tt, target)
 	}
 	return nil, fmt.Errorf("No such type %T", t)
 }
@@ -94,10 +86,6 @@ func (w *Walker) WalkTypeMarshal(t schema.Type, target string) (*StringBuilder, 
 		return w.WalkStringMarshal(tt, target)
 	case *schema.StructType:
 		return w.WalkStructMarshal(tt, target)
-	case *schema.TimeType:
-		return w.WalkTimeMarshal(tt, target)
-	case *schema.UnionType:
-		return w.WalkUnionMarshal(tt, target)
 	}
 	return nil, fmt.Errorf("No such type %T", t)
 }
@@ -126,10 +114,6 @@ func (w *Walker) WalkTypeUnmarshal(t schema.Type, target string) (*StringBuilder
 		return w.WalkStringUnmarshal(tt, target)
 	case *schema.StructType:
 		return w.WalkStructUnmarshal(tt, target)
-	case *schema.TimeType:
-		return w.WalkTimeUnmarshal(tt, target)
-	case *schema.UnionType:
-		return w.WalkUnionUnmarshal(tt, target)
 	}
 	return nil, fmt.Errorf("No such type %T", t)
 }

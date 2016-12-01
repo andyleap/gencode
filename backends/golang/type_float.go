@@ -23,22 +23,28 @@ func init() {
 	template.Must(FloatTemps.New("marshal").Parse(`
 	{
 		{{if .W.Unsafe}}
-		*(*float{{.Bits}})(unsafe.Pointer(&buf[{{if .W.IAdjusted}}i + {{end}}{{.W.Offset}}])) = {{.Target}}
+		*(*float{{.Bits}})(unsafe.Pointer(&buf[i])) = {{.Target}}
 		{{else}}
 		v := *(*uint{{.Bits}})(unsafe.Pointer(&({{.Target}})))
 		{{range BitRange .Bits}}
-		buf[{{if $.W.IAdjusted}}i + {{end}}{{Bytes .}} + {{$.W.Offset}}] = byte(v >> {{.}})
+		buf[i + {{Bytes .}}] = byte(v >> {{.}})
 		{{end}}
 		{{end}}
+		i += {{.Bits}}/8
 	}`))
 	template.Must(FloatTemps.New("unmarshal").Parse(`
 	{
 		{{if .W.Unsafe}}
-		{{.Target}} = *(*float{{.Bits}})(unsafe.Pointer(&buf[{{if .W.IAdjusted}}i + {{end}}{{.W.Offset}}]))
+		{{.Target}} = *(*float{{.Bits}})(unsafe.Pointer(&buf[i]))
 		{{else}}
-		v := 0{{range BitRange .Bits}} | (uint{{$.Bits}}(buf[{{if $.W.IAdjusted}}i + {{end}}{{Bytes .}} + {{$.W.Offset}}]) << {{.}}){{end}}
+		v := 0{{range BitRange .Bits}} | (uint{{$.Bits}}(buf[i + {{Bytes .}}]) << {{.}}){{end}}
 		{{.Target}} = *(*float{{.Bits}})(unsafe.Pointer(&v))
 		{{end}}
+		i += {{.Bits}}/8
+	}`))
+	template.Must(FloatTemps.New("size").Parse(`
+	{
+		s += {{.Bits}}/8
 	}`))
 	template.Must(FloatTemps.New("field").Parse(`float{{.Bits}}`))
 }
@@ -57,20 +63,18 @@ func (w *Walker) WalkFloatDef(ft *schema.FloatType) (parts *StringBuilder, err e
 
 func (w *Walker) WalkFloatSize(ft *schema.FloatType, target string) (parts *StringBuilder, err error) {
 	parts = &StringBuilder{}
-	w.Offset += ft.Bits / 8
+	err = parts.AddTemplate(FloatTemps, "size", FloatTemp{ft, w, target})
 	return
 }
 
 func (w *Walker) WalkFloatMarshal(ft *schema.FloatType, target string) (parts *StringBuilder, err error) {
 	parts = &StringBuilder{}
 	err = parts.AddTemplate(FloatTemps, "marshal", FloatTemp{ft, w, target})
-	w.Offset += ft.Bits / 8
 	return
 }
 
 func (w *Walker) WalkFloatUnmarshal(ft *schema.FloatType, target string) (parts *StringBuilder, err error) {
 	parts = &StringBuilder{}
 	err = parts.AddTemplate(FloatTemps, "unmarshal", FloatTemp{ft, w, target})
-	w.Offset += ft.Bits / 8
 	return
 }

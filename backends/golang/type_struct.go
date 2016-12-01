@@ -15,7 +15,7 @@ func init() {
 
 	template.Must(StructTemps.New("marshal").Parse(`
 	{
-		nbuf, err := {{.Target}}.Marshal(buf[{{if .W.IAdjusted}}i + {{end}}{{.W.Offset}}:])
+		nbuf, err := {{.Target}}.Marshal(buf[i:])
 		if err != nil {
 			return nil, err
 		}
@@ -23,7 +23,7 @@ func init() {
 	}`))
 	template.Must(StructTemps.New("unmarshal").Parse(`
 	{
-		ni, err := {{.Target}}.Unmarshal(buf[{{if .W.IAdjusted}}i + {{end}}{{.W.Offset}}:])
+		ni, err := {{.Target}}.Unmarshal(buf[i:])
 		if err != nil {
 			return 0, err
 		}
@@ -51,20 +51,17 @@ func (w *Walker) WalkStructDef(st *schema.StructType) (parts *StringBuilder, err
 func (w *Walker) WalkStructSize(st *schema.StructType, target string) (parts *StringBuilder, err error) {
 	parts = &StringBuilder{}
 	err = parts.AddTemplate(StructTemps, "size", StructTemp{st, w, target})
-	w.IAdjusted = true
 	return
 }
 
 func (w *Walker) WalkStructMarshal(st *schema.StructType, target string) (parts *StringBuilder, err error) {
 	parts = &StringBuilder{}
 	err = parts.AddTemplate(StructTemps, "marshal", StructTemp{st, w, target})
-	w.IAdjusted = true
 	return
 }
 
 func (w *Walker) WalkStructUnmarshal(st *schema.StructType, target string) (parts *StringBuilder, err error) {
 	parts = &StringBuilder{}
 	err = parts.AddTemplate(StructTemps, "unmarshal", StructTemp{st, w, target})
-	w.IAdjusted = true
 	return
 }

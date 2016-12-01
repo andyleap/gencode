@@ -15,11 +15,17 @@ func init() {
 
 	template.Must(ByteTemps.New("marshal").Parse(`
 	{
-		buf[{{if .W.IAdjusted}}i + {{end}}{{.W.Offset}}] = {{.Target}};
+		buf[i] = {{.Target}};
+		i++;
 	}`))
 	template.Must(ByteTemps.New("unmarshal").Parse(`
 	{
-		{{.Target}} = buf[{{if .W.IAdjusted}}i + {{end}}{{.W.Offset}}];
+		{{.Target}} = buf[i];
+		i++;
+	}`))
+	template.Must(ByteTemps.New("size").Parse(`
+	{
+		s++;
 	}`))
 }
 
@@ -37,20 +43,18 @@ func (w *Walker) WalkByteDef(bt *schema.ByteType) (parts *StringBuilder, err err
 
 func (w *Walker) WalkByteSize(bt *schema.ByteType, target string) (parts *StringBuilder, err error) {
 	parts = &StringBuilder{}
-	w.Offset++
+	err = parts.AddTemplate(ByteTemps, "size", ByteTemp{bt, w, target})
 	return
 }
 
 func (w *Walker) WalkByteMarshal(bt *schema.ByteType, target string) (parts *StringBuilder, err error) {
 	parts = &StringBuilder{}
 	err = parts.AddTemplate(ByteTemps, "marshal", ByteTemp{bt, w, target})
-	w.Offset++
 	return
 }
 
 func (w *Walker) WalkByteUnmarshal(bt *schema.ByteType, target string) (parts *StringBuilder, err error) {
 	parts = &StringBuilder{}
 	err = parts.AddTemplate(ByteTemps, "unmarshal", ByteTemp{bt, w, target})
-	w.Offset++
 	return
 }

@@ -17,14 +17,14 @@ func init() {
 	{
 		l := uint64(len({{.Target}}))
 		{{.VarIntCode}}
-		copy(buf[{{if .W.IAdjusted}}i + {{end}}{{.W.Offset}}:], {{.Target}})
+		copy(buf[i:], {{.Target}})
 		i += l
 	}`))
 	template.Must(StringTemps.New("unmarshal").Parse(`
 	{
 		l := uint64(0)
 		{{.VarIntCode}}
-		{{.Target}} = string(buf[{{if .W.IAdjusted}}i + {{end}}{{.W.Offset}}:{{if .W.IAdjusted}}i + {{end}}{{.W.Offset}}+l])
+		{{.Target}} = string(buf[i:i+l])
 		i += l
 	}`))
 	template.Must(StringTemps.New("size").Parse(`

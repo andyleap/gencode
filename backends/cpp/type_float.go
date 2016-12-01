@@ -21,10 +21,14 @@ func init() {
 	})
 
 	template.Must(FloatTemps.New("marshal").Parse(`
-	memcpy(&buf[{{if .W.IAdjusted}}i + {{end}}{{.W.Offset}}], &{{.Target}}, {{.Bits}}/8);`))
+	memcpy(&buf[i], &{{.Target}}, {{.Bits}}/8);
+	i += {{.Bits}}/8;`))
 	template.Must(FloatTemps.New("unmarshal").Parse(`
-	memcpy(&{{.Target}}, &buf[{{if .W.IAdjusted}}i + {{end}}{{.W.Offset}}], {{.Bits}}/8);`))
+	memcpy(&{{.Target}}, &buf[i], {{.Bits}}/8);
+	i += {{.Bits}}/8;`))
 	template.Must(FloatTemps.New("field").Parse(`{{if .IsFloat}}float{{else}}double{{end}}`))
+	template.Must(FloatTemps.New("size").Parse(`
+	s += {{.Bits}}/8;`))
 }
 
 type FloatTemp struct {
@@ -42,20 +46,18 @@ func (w *Walker) WalkFloatDef(ft *schema.FloatType) (parts *StringBuilder, err e
 
 func (w *Walker) WalkFloatSize(ft *schema.FloatType, target string) (parts *StringBuilder, err error) {
 	parts = &StringBuilder{}
-	w.Offset += ft.Bits / 8
+	err = parts.AddTemplate(FloatTemps, "size", FloatTemp{ft, w, "", ft.Bits == 32})
 	return
 }
 
 func (w *Walker) WalkFloatMarshal(ft *schema.FloatType, target string) (parts *StringBuilder, err error) {
 	parts = &StringBuilder{}
 	err = parts.AddTemplate(FloatTemps, "marshal", FloatTemp{ft, w, target, ft.Bits == 32})
-	w.Offset += ft.Bits / 8
 	return
 }
 
 func (w *Walker) WalkFloatUnmarshal(ft *schema.FloatType, target string) (parts *StringBuilder, err error) {
 	parts = &StringBuilder{}
 	err = parts.AddTemplate(FloatTemps, "unmarshal", FloatTemp{ft, w, target, ft.Bits == 32})
-	w.Offset += ft.Bits / 8
 	return
 }

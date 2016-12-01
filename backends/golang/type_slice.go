@@ -19,9 +19,6 @@ func init() {
 		{{.VarIntCode}}
 		for {{.Variable}} := range {{.Target}} {
 			{{.SubTypeCode}}
-			{{if gt .SubOffset 0 }}
-			i += {{.SubOffset}}
-			{{end}}
 		}
 	}`))
 	template.Must(SliceTemps.New("unmarshal").Parse(`
@@ -35,16 +32,13 @@ func init() {
 		}
 		for {{.Variable}} := range {{.Target}} {
 			{{.SubTypeCode}}
-			{{if gt .SubOffset 0 }}
-			i += {{.SubOffset}}
-			{{end}}
 		}
 	}`))
 	template.Must(SliceTemps.New("bytemarshal").Parse(`
 	{
 		l := uint64(len({{.Target}}))
 		{{.VarIntCode}}
-		copy(buf[{{if .W.IAdjusted}}i + {{end}}{{.W.Offset}}:], {{.Target}})
+		copy(buf[i:], {{.Target}})
 		i += l
 	}`))
 	template.Must(SliceTemps.New("byteunmarshal").Parse(`
@@ -56,25 +50,17 @@ func init() {
 		} else {
 			{{.Target}} = make([]{{.SubField}}, l)
 		}
-		copy({{.Target}}, buf[{{if .W.IAdjusted}}i + {{end}}{{.W.Offset}}:])
+		copy({{.Target}}, buf[i:])
 		i += l
 	}`))
 	template.Must(SliceTemps.New("size").Parse(`
 	{
 		l := uint64(len({{.Target}}))
 		{{.VarIntCode}}
-		{{if eq .SubTypeCode "" }}
-		{{if gt .SubOffset 0 }}
-		s += {{.SubOffset}}*l
-		{{end}}
-		{{else}}
 		for {{.Variable}} := range {{.Target}} {
+			_ = {{.Variable}}
 			{{.SubTypeCode}}
-			{{if gt .SubOffset 0 }}
-			s += {{.SubOffset}}
-			{{end}}
 		}
-		{{end}}
 	}`))
 	template.Must(SliceTemps.New("bytesize").Parse(`
 	{
@@ -88,7 +74,6 @@ func init() {
 type SliceTemp struct {
 	*schema.SliceType
 	W           *Walker
-	SubOffset   int
 	Target      string
 	SubTypeCode string
 	SubField    string
@@ -122,17 +107,14 @@ func (w *Walker) WalkSliceSize(st *schema.SliceType, target string) (parts *Stri
 	if st.Depth > 0 {
 		variable += strconv.Itoa(st.Depth)
 	}
-	offset := w.Offset
 	subtypecode, err := w.WalkTypeSize(st.SubType, target+"["+variable+"]")
 	if err != nil {
 		return nil, err
 	}
-	SubOffset := w.Offset - offset
-	w.Offset = offset
 	if _, ok := st.SubType.(*schema.ByteType); ok {
-		err = parts.AddTemplate(SliceTemps, "bytesize", SliceTemp{st, w, SubOffset, target, subtypecode.String(), "", intcode.String(), variable})
+		err = parts.AddTemplate(SliceTemps, "bytesize", SliceTemp{st, w, target, subtypecode.String(), "", intcode.String(), variable})
 	} else {
-		err = parts.AddTemplate(SliceTemps, "size", SliceTemp{st, w, SubOffset, target, subtypecode.String(), "", intcode.String(), variable})
+		err = parts.AddTemplate(SliceTemps, "size", SliceTemp{st, w, target, subtypecode.String(), "", intcode.String(), variable})
 	}
 	return
 }
@@ -152,21 +134,18 @@ func (w *Walker) WalkSliceMarshal(st *schema.SliceType, target string) (parts *S
 	if st.Depth > 0 {
 		variable += strconv.Itoa(st.Depth)
 	}
-	offset := w.Offset
 	subtypecode, err := w.WalkTypeMarshal(st.SubType, target+"["+variable+"]")
 	if err != nil {
 		return nil, err
 	}
-	SubOffset := w.Offset - offset
-	w.Offset = offset
 	subfield, err := w.WalkTypeDef(st.SubType)
 	if err != nil {
 		return nil, err
 	}
 	if _, ok := st.SubType.(*schema.ByteType); ok {
-		err = parts.AddTemplate(SliceTemps, "bytemarshal", SliceTemp{st, w, SubOffset, target, subtypecode.String(), subfield.String(), intcode.String(), variable})
+		err = parts.AddTemplate(SliceTemps, "bytemarshal", SliceTemp{st, w, target, subtypecode.String(), subfield.String(), intcode.String(), variable})
 	} else {
-		err = parts.AddTemplate(SliceTemps, "marshal", SliceTemp{st, w, SubOffset, target, subtypecode.String(), subfield.String(), intcode.String(), variable})
+		err = parts.AddTemplate(SliceTemps, "marshal", SliceTemp{st, w, target, subtypecode.String(), subfield.String(), intcode.String(), variable})
 	}
 	return
 }
@@ -186,21 +165,18 @@ func (w *Walker) WalkSliceUnmarshal(st *schema.SliceType, target string) (parts 
 	if st.Depth > 0 {
 		variable += strconv.Itoa(st.Depth)
 	}
-	offset := w.Offset
 	subtypecode, err := w.WalkTypeUnmarshal(st.SubType, target+"["+variable+"]")
 	if err != nil {
 		return nil, err
 	}
-	SubOffset := w.Offset - offset
-	w.Offset = offset
 	subfield, err := w.WalkTypeDef(st.SubType)
 	if err != nil {
 		return nil, err
 	}
 	if _, ok := st.SubType.(*schema.ByteType); ok {
-		err = parts.AddTemplate(SliceTemps, "byteunmarshal", SliceTemp{st, w, SubOffset, target, subtypecode.String(), subfield.String(), intcode.String(), variable})
+		err = parts.AddTemplate(SliceTemps, "byteunmarshal", SliceTemp{st, w, target, subtypecode.String(), subfield.String(), intcode.String(), variable})
 	} else {
-		err = parts.AddTemplate(SliceTemps, "unmarshal", SliceTemp{st, w, SubOffset, target, subtypecode.String(), subfield.String(), intcode.String(), variable})
+		err = parts.AddTemplate(SliceTemps, "unmarshal", SliceTemp{st, w, target, subtypecode.String(), subfield.String(), intcode.String(), variable})
 	}
 	return
 }

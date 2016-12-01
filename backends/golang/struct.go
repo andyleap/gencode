@@ -42,12 +42,6 @@ func (d *%s) MarshalFramedSize() (s uint64, us uint64) {
 		}
 		parts.Join(p)
 	}
-	if w.Offset > 0 {
-		parts.Append(fmt.Sprintf(`
-	s += %d`, w.Offset))
-		w.Offset = 0
-	}
-	w.IAdjusted = false
 	if s.Framed {
 		intcode, err := w.WalkIntSize(intHandler, "l")
 		if err != nil {
@@ -106,13 +100,12 @@ func (d *%s) Marshal(buf []byte) ([]byte, error) {`, s.Name))
 		parts.Join(p)
 	}
 	parts.Append(fmt.Sprintf(`
-	return buf[:i+%d], nil
+	return buf[:i], nil
 }
 
 func (d *%s) Unmarshal(buf []byte) (uint64, error) {
 	i := uint64(0)
-	`, w.Offset, s.Name))
-	w.Offset = 0
+	`, s.Name))
 	if s.Framed {
 		parts.Append(`usize := uint64(0)
 	`)
@@ -134,11 +127,9 @@ func (d *%s) Unmarshal(buf []byte) (uint64, error) {
 		parts.Join(p)
 	}
 	parts.Append(fmt.Sprintf(`
-	return i + %d, nil
+	return i, nil
 }
-`, w.Offset))
-	w.Offset = 0
-	w.IAdjusted = false
+`))
 	if s.Framed {
 		parts.Append(fmt.Sprintf(`
 func (d *%s) Serialize(w io.Writer) (error) {

@@ -17,14 +17,14 @@ func init() {
 	{
 		uint64_t l = {{.Target}}.length();
 		{{.VarIntCode}}
-		memcpy(&buf[{{if .W.IAdjusted}}i + {{end}}{{.W.Offset}}], {{.Target}}.c_str(), l);
+		memcpy(&buf[i], {{.Target}}.c_str(), l);
 		i += l;
 	}`))
 	template.Must(StringTemps.New("unmarshal").Parse(`
 	{
 		uint64_t l = 0;
 		{{.VarIntCode}}
-		{{.Target}}.assign((const char*)&buf[{{if .W.IAdjusted}}i + {{end}}{{.W.Offset}}], l);
+		{{.Target}}.assign((const char*)&buf[i], l);
 		i += l;
 	}`))
 	template.Must(StringTemps.New("size").Parse(`

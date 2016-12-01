@@ -23,7 +23,6 @@ func init() {
 	template.Must(IntTemps.New("marshal").Parse(`
 	{
 		{{if .VarInt }}
-
 		t := uint{{.Bits}}({{.Target}})
 		{{if .Signed}}
 		t <<= 1
@@ -32,20 +31,18 @@ func init() {
    		}
 		{{end}}
 		for t >= 0x80 {
-			buf[i + {{.W.Offset}}] = byte(t) | 0x80
+			buf[i] = byte(t) | 0x80
 			t >>= 7
 			i++
 		}
-		buf[i + {{.W.Offset}}] = byte(t)
+		buf[i] = byte(t)
 		i++
-
 		{{else}}
-
 		{{if .W.Unsafe}}
-		*(*{{if not .Signed}}u{{end}}int{{.Bits}})(unsafe.Pointer(&buf[{{if $.W.IAdjusted}}i + {{end}}{{$.W.Offset}}])) = {{.Target}}
+		*(*{{if not .Signed}}u{{end}}int{{.Bits}})(unsafe.Pointer(&buf[i])) = {{.Target}}
 		{{else}}
 		{{range BitRange .Bits}}
-		buf[{{if $.W.IAdjusted}}i + {{end}}{{Bytes .}} + {{$.W.Offset}}] = byte({{$.Target}} >> {{.}})
+		buf[i + {{Bytes .}}] = byte({{$.Target}} >> {{.}})
 		{{end}}
 		{{end}}
 		i += {{.Bits}}/8
@@ -55,10 +52,10 @@ func init() {
 	{
 		{{if .VarInt}}
 		bs := uint8(7)
-		t := uint{{.Bits}}(buf[i + {{.W.Offset}}] & 0x7F)
-		for buf[i + {{.W.Offset}}] & 0x80 == 0x80 {
+		t := uint{{.Bits}}(buf[i] & 0x7F)
+		for buf[i] & 0x80 == 0x80 {
 			i++
-			t |= uint{{.Bits}}(buf[i + {{.W.Offset}}]&0x7F) << bs
+			t |= uint{{.Bits}}(buf[i]&0x7F) << bs
 			bs += 7
 		}
 		i++
@@ -70,13 +67,11 @@ func init() {
 		{{else}}
 		{{.Target}} = t
 		{{end}}
-
 		{{else}}
-
 		{{if .W.Unsafe}}
-		{{.Target}} = *(*{{if not .Signed}}u{{end}}int{{.Bits}})(unsafe.Pointer(&buf[{{if $.W.IAdjusted}}i + {{end}}{{$.W.Offset}}]))
+		{{.Target}} = *(*{{if not .Signed}}u{{end}}int{{.Bits}})(unsafe.Pointer(&buf[i]))
 		{{else}}
-		{{$.Target}} = 0{{range BitRange .Bits}} | ({{if not $.Signed}}u{{end}}int{{$.Bits}}(buf[{{if $.W.IAdjusted}}i + {{end}}{{Bytes .}} + {{$.W.Offset}}]) << {{.}}){{end}}
+		{{$.Target}} = 0{{range BitRange .Bits}} | ({{if not $.Signed}}u{{end}}int{{$.Bits}}(buf[i + {{Bytes .}}]) << {{.}}){{end}}
 		{{end}}
 		i += {{.Bits}}/8
 		{{end}}
@@ -104,6 +99,7 @@ func init() {
 		}
 		s++
 		{{end}}
+		{{else}}
 		s += {{.Bits}}/8
 		{{end}}
 	}`))
@@ -123,12 +119,6 @@ func (w *Walker) WalkIntDef(it *schema.IntType) (parts *StringBuilder, err error
 
 func (w *Walker) WalkIntSize(it *schema.IntType, target string) (parts *StringBuilder, err error) {
 	parts = &StringBuilder{}
-	if !it.VarInt {
-		w.Offset += it.Bits / 8
-		return
-	} else {
-		w.IAdjusted = true
-	}
 	err = parts.AddTemplate(IntTemps, "size", IntTemp{it, w, target})
 	return
 }
@@ -136,21 +126,11 @@ func (w *Walker) WalkIntSize(it *schema.IntType, target string) (parts *StringBu
 func (w *Walker) WalkIntMarshal(it *schema.IntType, target string) (parts *StringBuilder, err error) {
 	parts = &StringBuilder{}
 	err = parts.AddTemplate(IntTemps, "marshal", IntTemp{it, w, target})
-	if !it.VarInt {
-		w.Offset += it.Bits / 8
-	} else {
-		w.IAdjusted = true
-	}
 	return
 }
 
 func (w *Walker) WalkIntUnmarshal(it *schema.IntType, target string) (parts *StringBuilder, err error) {
 	parts = &StringBuilder{}
 	err = parts.AddTemplate(IntTemps, "unmarshal", IntTemp{it, w, target})
-	if !it.VarInt {
-		w.Offset += it.Bits / 8
-	} else {
-		w.IAdjusted = true
-	}
 	return
 }

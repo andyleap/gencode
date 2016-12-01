@@ -61,13 +61,6 @@ uint64_t C%s::MarshalSize() {
 		}
 		parts.Join(p)
 	}
-	if w.Offset > 0 {
-		parts.Append(fmt.Sprintf(`
-	s += %d;`, w.Offset))
-		w.Offset = 0
-	}
-	w.IAdjusted = false
-
 	parts.Append(fmt.Sprintf(`
 	return s;
 }
@@ -86,13 +79,12 @@ uint64_t C%s::Marshal(uint8_t* buf) {`, s.Name))
 		parts.Join(p)
 	}
 	parts.Append(fmt.Sprintf(`
-	return i+%d;
+	return i;
 }
 
 uint64_t C%s::Unmarshal(uint8_t* buf) {
 	uint64_t i = 0;
-	`, w.Offset, s.Name))
-	w.Offset = 0
+	`, s.Name))
 	for _, f := range s.Fields {
 		p, err := w.WalkFieldUnmarshal(f)
 		if err != nil {
@@ -101,12 +93,10 @@ uint64_t C%s::Unmarshal(uint8_t* buf) {
 		parts.Join(p)
 	}
 	parts.Append(fmt.Sprintf(`
-	return i + %d;
+	return i;
 }
 
-`, w.Offset))
-	w.Offset = 0
-	w.IAdjusted = false
+`))
 	return
 }
 

@@ -26,14 +26,14 @@ func init() {
 		{{if .Signed}}t <<= 1;
 		if ({{.Target}} < 0) { t = ^t; }{{end}}
    		while (t >= 0x80) {
-			buf[i + {{.W.Offset}}] = uint8_t(t) | 0x80;
+			buf[i] = uint8_t(t) | 0x80;
 			t >>= 7;
 			i++;
 		}
-		buf[i + {{.W.Offset}}] = uint8_t(t);
+		buf[i] = uint8_t(t);
 		i++;
 		{{else}}
-		memcpy(&buf[{{if $.W.IAdjusted}}i + {{end}}{{$.W.Offset}}], &{{.Target}}, {{.Bits}}/8);
+		memcpy(&buf[i], &{{.Target}}, {{.Bits}}/8);
 		i += {{.Bits}}/8;
 		{{end}}
 	}`))
@@ -41,10 +41,10 @@ func init() {
 	{
 		{{if .VarInt}}
 		uint8_t bs = 7;
-		uint{{.Bits}}_t t = buf[i + {{.W.Offset}}] & 0x7F;
-		while ((buf[i + {{.W.Offset}}] & 0x80) == 0x80) {
+		uint{{.Bits}}_t t = buf[i] & 0x7F;
+		while ((buf[i] & 0x80) == 0x80) {
 			i++;
-			t |= ((uint{{.Bits}}_t)buf[i + {{.W.Offset}}] & 0x7F) << bs;
+			t |= ((uint{{.Bits}}_t)buf[i] & 0x7F) << bs;
 			bs += 7;
 		}
 		i++;
@@ -57,7 +57,7 @@ func init() {
 		{{.Target}} = t;
 		{{end}}
 		{{else}}
-		memcpy(&{{.Target}}, &buf[{{if $.W.IAdjusted}}i + {{end}}{{$.W.Offset}}], {{.Bits}}/8);
+		memcpy(&{{.Target}}, &buf[i], {{.Bits}}/8);
 		i += {{.Bits}}/8;
 		{{end}}
 	}`))
@@ -104,12 +104,6 @@ func (w *Walker) WalkIntDef(it *schema.IntType) (parts *StringBuilder, err error
 
 func (w *Walker) WalkIntSize(it *schema.IntType, target string) (parts *StringBuilder, err error) {
 	parts = &StringBuilder{}
-	if !it.VarInt {
-		w.Offset += it.Bits / 8
-		return
-	} else {
-		w.IAdjusted = true
-	}
 	err = parts.AddTemplate(IntTemps, "size", IntTemp{it, w, target})
 	return
 }
@@ -117,21 +111,11 @@ func (w *Walker) WalkIntSize(it *schema.IntType, target string) (parts *StringBu
 func (w *Walker) WalkIntMarshal(it *schema.IntType, target string) (parts *StringBuilder, err error) {
 	parts = &StringBuilder{}
 	err = parts.AddTemplate(IntTemps, "marshal", IntTemp{it, w, target})
-	if !it.VarInt {
-		w.Offset += it.Bits / 8
-	} else {
-		w.IAdjusted = true
-	}
 	return
 }
 
 func (w *Walker) WalkIntUnmarshal(it *schema.IntType, target string) (parts *StringBuilder, err error) {
 	parts = &StringBuilder{}
 	err = parts.AddTemplate(IntTemps, "unmarshal", IntTemp{it, w, target})
-	if !it.VarInt {
-		w.Offset += it.Bits / 8
-	} else {
-		w.IAdjusted = true
-	}
 	return
 }
