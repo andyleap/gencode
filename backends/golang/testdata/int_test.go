@@ -45,7 +45,7 @@ func testInt64(t *testing.T, x int64) {
 		t.Errorf("%d: Unmarshal and Marshal report different # bytes: %d vs. %d", x, n, len(buf))
 	}
 	if !reflect.DeepEqual(got, want) {
-		t.Errorf("%d: Unmarshal = %d; want %d", got, want)
+		t.Errorf("%d: Unmarshal = %d; want %d", x, got, want)
 	}
 }
 
@@ -73,7 +73,7 @@ func testUint64(t *testing.T, x uint64) {
 		t.Errorf("%d: Unmarshal and Marshal report different # bytes: %d vs. %d", x, n, len(buf))
 	}
 	if !reflect.DeepEqual(got, want) {
-		t.Errorf("%d: Unmarshal = %d; want %d", got, want)
+		t.Errorf("%d: Unmarshal = %d; want %d", x, got, want)
 	}
 }
 
