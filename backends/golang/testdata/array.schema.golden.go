@@ -70,10 +70,10 @@ func (d *Array) Size() (s uint64) {
 
 		}
 
-		for k := range d.D {
+		for k0 := range d.D {
 
 			{
-				s += d.D[k].Size()
+				s += d.D[k0].Size()
 			}
 
 		}
@@ -140,17 +140,17 @@ func (d *Array) Marshal(buf []byte) ([]byte, error) {
 			i++
 
 		}
-		for k := range d.C {
+		for k0 := range d.C {
 
 			{
 
-				buf[i+0+0] = byte(d.C[k] >> 0)
+				buf[i+0+0] = byte(d.C[k0] >> 0)
 
-				buf[i+1+0] = byte(d.C[k] >> 8)
+				buf[i+1+0] = byte(d.C[k0] >> 8)
 
-				buf[i+2+0] = byte(d.C[k] >> 16)
+				buf[i+2+0] = byte(d.C[k0] >> 16)
 
-				buf[i+3+0] = byte(d.C[k] >> 24)
+				buf[i+3+0] = byte(d.C[k0] >> 24)
 
 			}
 
@@ -174,10 +174,10 @@ func (d *Array) Marshal(buf []byte) ([]byte, error) {
 			i++
 
 		}
-		for k := range d.D {
+		for k0 := range d.D {
 
 			{
-				nbuf, err := d.D[k].Marshal(buf[i+0:])
+				nbuf, err := d.D[k0].Marshal(buf[i+0:])
 				if err != nil {
 					return nil, err
 				}
@@ -240,11 +240,11 @@ func (d *Array) Unmarshal(buf []byte) (uint64, error) {
 		} else {
 			d.C = make([]int32, l)
 		}
-		for k := range d.C {
+		for k0 := range d.C {
 
 			{
 
-				d.C[k] = 0 | (int32(buf[i+0+0]) << 0) | (int32(buf[i+1+0]) << 8) | (int32(buf[i+2+0]) << 16) | (int32(buf[i+3+0]) << 24)
+				d.C[k0] = 0 | (int32(buf[i+0+0]) << 0) | (int32(buf[i+1+0]) << 8) | (int32(buf[i+2+0]) << 16) | (int32(buf[i+3+0]) << 24)
 
 			}
 
@@ -274,10 +274,10 @@ func (d *Array) Unmarshal(buf []byte) (uint64, error) {
 		} else {
 			d.D = make([]Nested, l)
 		}
-		for k := range d.D {
+		for k0 := range d.D {
 
 			{
-				ni, err := d.D[k].Unmarshal(buf[i+0:])
+				ni, err := d.D[k0].Unmarshal(buf[i+0:])
 				if err != nil {
 					return 0, err
 				}
@@ -332,10 +332,10 @@ func (d *Nested) Size() (s uint64) {
 
 		}
 
-		for k := range d.B {
+		for k0 := range d.B {
 
 			{
-				l := uint64(len(d.B[k]))
+				l := uint64(len(d.B[k0]))
 
 				{
 
@@ -407,10 +407,10 @@ func (d *Nested) Marshal(buf []byte) ([]byte, error) {
 			i++
 
 		}
-		for k := range d.B {
+		for k0 := range d.B {
 
 			{
-				l := uint64(len(d.B[k]))
+				l := uint64(len(d.B[k0]))
 
 				{
 
@@ -425,7 +425,7 @@ func (d *Nested) Marshal(buf []byte) ([]byte, error) {
 					i++
 
 				}
-				copy(buf[i+0:], d.B[k])
+				copy(buf[i+0:], d.B[k0])
 				i += l
 			}
 
@@ -485,7 +485,7 @@ func (d *Nested) Unmarshal(buf []byte) (uint64, error) {
 		} else {
 			d.B = make([]string, l)
 		}
-		for k := range d.B {
+		for k0 := range d.B {
 
 			{
 				l := uint64(0)
@@ -504,7 +504,7 @@ func (d *Nested) Unmarshal(buf []byte) (uint64, error) {
 					l = t
 
 				}
-				d.B[k] = string(buf[i+0 : i+0+l])
+				d.B[k0] = string(buf[i+0 : i+0+l])
 				i += l
 			}
 
