@@ -11,18 +11,19 @@ type Walker struct {
 	Offset    int
 	IAdjusted bool
 	Unsafe    bool
+	BigEndian bool
 }
 
 func (w *Walker) WalkSchema(s *schema.Schema, Package string) (parts *StringBuilder, err error) {
 	parts = &StringBuilder{}
 	parts.Append(fmt.Sprintf(`package %s
-	
+
 	import (
 		"unsafe"
 		"io"
 		"time"
 	)
-	
+
 	var (
 		_ = unsafe.Sizeof(0)
 		_ = io.ReadFull
