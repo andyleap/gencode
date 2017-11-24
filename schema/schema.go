@@ -28,6 +28,7 @@ type ResolveType interface {
 
 type Field struct {
 	Name string
+	Tag  string
 	Type Type
 }
 

@@ -205,7 +205,17 @@ func (w *Walker) WalkFieldDef(s *schema.Field) (parts *StringBuilder, err error)
 	if err != nil {
 		return nil, err
 	}
-	parts.Join(subp)
+
+	// Optional struct tag.
+	if s.Tag != "" {
+		parts.Append(subp.String())
+		t := &StringBuilder{}
+		t.Append(fmt.Sprintf(`%s `, s.Tag))
+		parts.Join(t)
+	} else {
+		parts.Join(subp)
+	}
+
 	return
 }
 

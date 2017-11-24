@@ -9,6 +9,9 @@ import (
 func MakeGrammar() *Grammar {
 	Letter := Set("\\p{L}")
 	Digit := Set("\\p{Nd}")
+	Tick := Set("`")
+	Any := Set("^`")
+
 	WS := Ignore(Mult(0, 0, Set("\t\n\f\r ")))
 	RWS := Ignore(Mult(1, 0, Set("\t\n\f\r ")))
 	NL := Ignore(And(Mult(0, 0, Set("\t\f\r ")), Mult(1, 0, And(Lit("\n"), WS))))
@@ -125,10 +128,22 @@ func MakeGrammar() *Grammar {
 
 	gType.Set(Or(gSlice, gArray, gPointer, gIntField, gByteField, gBoolField, gStringField, gTimeField, gFloatField, gUnion, gDeferField))
 
-	gField := And(Tag("Name", gIdentifier), Require(RWS, Tag("Type", gType), NL))
+	gStructTag := And(Tick, Mult(0, 0, Or(Any)), Tick)
+	gStructTag.Node(func(m Match) (Match, error) {
+		return String(m), nil
+	})
+
+	gField := And(Tag("Name", gIdentifier), Require(RWS, Tag("Type", gType)), Optional(And(RWS, Tag("Tag", gStructTag))), Require(NL))
 	gField.Node(func(m Match) (Match, error) {
+		// Optional struct tag
+		var tg string
+		if t, ok := GetTag(m, "Tag").(string); ok {
+			tg = t
+		}
+
 		f := &Field{
 			Name: GetTag(m, "Name").(string),
+			Tag:  tg,
 			Type: GetTag(m, "Type").(Type),
 		}
 		return TagMatch("Field", f), nil
