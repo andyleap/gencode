@@ -28,10 +28,13 @@ func main() {
 
 	flags := backend.Flags()
 
-	SchemaFile := ""
-	Debug := false
+	var (
+		SchemaFile, OutFile string
+		Debug               = false
+	)
 
 	flags.StringVar(&SchemaFile, "schema", "", "Schema file to process")
+	flags.StringVar(&OutFile, "out", "", "Filename for the generated code (optional)")
 	flags.BoolVar(&Debug, "debug", false, "Pretty print the resulting schema defs")
 
 	flags.Parse(os.Args[2:])
@@ -66,7 +69,12 @@ func main() {
 		log.Fatalf("Error generating output: %s", err)
 	}
 
-	err = ioutil.WriteFile(backend.GeneratedFilename(SchemaFile), []byte(code), 0666)
+	// Override generated file's filename.
+	outf := OutFile
+	if OutFile == "" {
+		outf = backend.GeneratedFilename(SchemaFile)
+	}
+	err = ioutil.WriteFile(outf, []byte(code), 0666)
 
 	if err != nil {
 		log.Fatalf("Error writing output file: %s", err)
