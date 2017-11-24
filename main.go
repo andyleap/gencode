@@ -47,7 +47,7 @@ func main() {
 	}
 
 	if file == nil {
-		log.Fatalf("error opening file %s", file)
+		log.Fatalf("error opening file %s", SchemaFile)
 	}
 
 	s, err := schema.ParseSchema(file)
