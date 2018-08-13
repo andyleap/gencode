@@ -117,24 +117,31 @@ The Request field will be declared of type Command, which must be an interface t
 
 Gencode encodes to smaller amounts of data, and does so very fast.  Some benchmarks (using schemas and test files located in the bench folder):
 ```
+Colfer encoded size: 62
 Gencode encoded size: 48
-GOB encoded size: 182
+GOB encoded size: 183
 GOB Stream encoded size: 62
 JSON encoded size: 138
 MSGP encoded size: 115
-PASS
-BenchmarkFixedBinarySerialize-8          2000000               894 ns/op
-BenchmarkFixedBinaryDeserialize-8        3000000               539 ns/op
-BenchmarkGencodeSerialize-8             10000000               174 ns/op
-BenchmarkGencodeDeserialize-8           10000000               219 ns/op
-BenchmarkFixedGencodeSerialize-8        20000000                75.7 ns/op
-BenchmarkFixedGencodeDeserialize-8      100000000               20.7 ns/op
-BenchmarkGobSerialize-8                   200000              9370 ns/op
-BenchmarkGobDeserialize-8                  30000             40337 ns/op
-BenchmarkGobStreamSerialize-8            1000000              1694 ns/op
-BenchmarkGobStreamDeserialize-8          1000000              2125 ns/op
-BenchmarkJSONSerialize-8                  500000              2780 ns/op
-BenchmarkJSONDeserialize-8                300000              5263 ns/op
-BenchmarkMSGPSerialize-8                 5000000               277 ns/op
-BenchmarkMSGPDeserialize-8               2000000               608 ns/op
+goos: darwin
+goarch: amd64
+pkg: github.com/andyleap/gencode/bench
+BenchmarkFixedBinarySerialize-12       	 3000000	       569 ns/op
+BenchmarkFixedBinaryDeserialize-12     	 5000000	       358 ns/op
+BenchmarkColferSerialize-12            	30000000	        45.2 ns/op	       0 B/op	       0 allocs/op
+BenchmarkColferDeserialize-12          	10000000	       232 ns/op	     144 B/op	       6 allocs/op
+BenchmarkFixedColferSerialize-12       	200000000	         9.10 ns/op
+BenchmarkFixedColferDeserialize-12     	200000000	         9.62 ns/op
+BenchmarkGencodeSerialize-12           	20000000	        90.3 ns/op	      48 B/op	       1 allocs/op
+BenchmarkGencodeDeserialize-12         	20000000	        97.5 ns/op	      16 B/op	       4 allocs/op
+BenchmarkFixedGencodeSerialize-12      	100000000	        11.4 ns/op
+BenchmarkFixedGencodeDeserialize-12    	200000000	         7.79 ns/op
+BenchmarkGobSerialize-12               	  200000	      6737 ns/op
+BenchmarkGobDeserialize-12             	   50000	     28500 ns/op
+BenchmarkGobStreamSerialize-12         	 1000000	      1211 ns/op
+BenchmarkGobStreamDeserialize-12       	 1000000	      1420 ns/op
+BenchmarkJSONSerialize-12              	 1000000	      1847 ns/op
+BenchmarkJSONDeserialize-12            	  300000	      5087 ns/op
+BenchmarkMSGPSerialize-12              	10000000	       132 ns/op	     144 B/op	       1 allocs/op
+BenchmarkMSGPDeserialize-12            	 5000000	       286 ns/op	      16 B/op	       4 allocs/op
 ```

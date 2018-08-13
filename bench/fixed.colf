@@ -1,0 +1,8 @@
+package bench
+
+type colferFixed struct {
+	a int64
+	b uint32
+	c float32
+	d float64
+}

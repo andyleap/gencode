@@ -1,0 +1,12 @@
+package bench
+
+type colferPerson struct {
+	name   text
+	age    uint8
+	height float64
+}
+
+type colferGroup struct {
+	name    text
+	members []colferPerson
+}
